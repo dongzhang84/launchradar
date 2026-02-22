@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { createProfile } from './actions'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -25,7 +26,7 @@ export default function RegisterPage() {
     setLoading(true)
 
     const supabase = createClient()
-    const { error } = await supabase.auth.signUp({ email, password })
+    const { data, error } = await supabase.auth.signUp({ email, password })
 
     if (error) {
       setError(error.message)
@@ -33,8 +34,15 @@ export default function RegisterPage() {
       return
     }
 
-    // Redirect to login with a confirmation hint; adjust if email confirmation is disabled.
-    router.push('/auth/login?registered=1')
+    if (data.user) {
+      try {
+        await createProfile(data.user.id, email)
+      } catch {
+        // Profile creation failed — redirect anyway; can be reconciled later.
+      }
+    }
+
+    router.push('/onboarding')
   }
 
   return (
