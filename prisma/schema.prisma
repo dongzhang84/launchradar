@@ -1,0 +1,90 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  name                String?
+  password            String
+  createdAt           DateTime  @default(now())
+
+  stripeCustomerId    String?   @unique
+  subscriptionStatus  String?
+  trialEndsAt         DateTime?
+  currentPeriodEnd    DateTime?
+
+  productDescription  String?
+  targetCustomer      String?
+  onboardingComplete  Boolean   @default(false)
+
+  keywords            String[]  @default([])
+  subreddits          String[]  @default([])
+  digestFrequency     String    @default("daily")
+  emailEnabled        Boolean   @default(true)
+  digestTime          Int       @default(8)
+
+  opportunitiesFound  Int       @default(0)
+  repliesMade         Int       @default(0)
+  conversions         Int       @default(0)
+
+  opportunities       Opportunity[]
+  feedback            Feedback[]
+}
+
+model Opportunity {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  platform        String
+  externalId      String
+  url             String
+  title           String
+  body            String?
+  subreddit       String?
+  author          String
+  commentCount    Int       @default(0)
+  score           Int       @default(0)
+  postedAt        DateTime
+
+  relevanceScore  Int
+  intentLevel     String
+  reasoning       String
+  suggestedReplies Json
+
+  includedInDigest Boolean  @default(false)
+  viewed          Boolean   @default(false)
+  replied         Boolean   @default(false)
+  repliedAt       DateTime?
+  dismissed       Boolean   @default(false)
+
+  createdAt       DateTime  @default(now())
+
+  feedback        Feedback[]
+
+  @@unique([userId, externalId])
+  @@index([userId, relevanceScore])
+  @@index([userId, createdAt])
+}
+
+model Feedback {
+  id              String      @id @default(cuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  opportunityId   String
+  opportunity     Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  isRelevant      Boolean
+  reason          String?
+
+  createdAt       DateTime    @default(now())
+
+  @@unique([userId, opportunityId])
+}
