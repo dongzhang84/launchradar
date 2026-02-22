@@ -26,7 +26,24 @@ export async function middleware(request: NextRequest) {
   )
 
   // Refresh the session — do not remove, required for Server Components to read auth state.
-  await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const { pathname } = request.nextUrl
+
+  const protectedRoutes = ['/dashboard', '/onboarding', '/settings']
+  const authRoutes = ['/auth/login', '/auth/register']
+
+  if (!user && protectedRoutes.some((route) => pathname.startsWith(route))) {
+    const redirectUrl = request.nextUrl.clone()
+    redirectUrl.pathname = '/auth/login'
+    return NextResponse.redirect(redirectUrl)
+  }
+
+  if (user && authRoutes.some((route) => pathname.startsWith(route))) {
+    const redirectUrl = request.nextUrl.clone()
+    redirectUrl.pathname = '/dashboard'
+    return NextResponse.redirect(redirectUrl)
+  }
 
   return supabaseResponse
 }
