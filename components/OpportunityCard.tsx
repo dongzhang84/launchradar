@@ -38,7 +38,7 @@ function hoursAgo(isoString: string): number {
 }
 
 export default function OpportunityCard({ opportunity, onViewReply, onReplied, onDismissed }: Props) {
-  const [replied, setReplied] = useState(opportunity.replied)
+  const [replied, setReplied] = useState<boolean>(opportunity.replied === true)
   const [replying, setReplying] = useState(false)
   const [fading, setFading] = useState(false)
   const [hidden, setHidden] = useState(false)

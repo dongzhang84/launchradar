@@ -31,7 +31,14 @@ function fromHN(story: HNStory): NormalizedPost {
 function matchesKeywords(post: NormalizedPost, keywords: string[]): boolean {
   if (keywords.length === 0) return false
   const haystack = `${post.title} ${post.body}`.toLowerCase()
-  return keywords.some((kw) => haystack.includes(kw.toLowerCase()))
+  return keywords.some((kw) => {
+    const phrase = kw.toLowerCase()
+    // Try the full phrase first
+    if (haystack.includes(phrase)) return true
+    // Fall back to individual significant words (length > 4) from the phrase
+    const words = phrase.split(/\s+/).filter((w) => w.length > 4)
+    return words.some((word) => haystack.includes(word))
+  })
 }
 
 export async function GET(request: NextRequest) {
@@ -47,13 +54,17 @@ export async function GET(request: NextRequest) {
   // 2. Unique subreddits across all profiles
   const uniqueSubreddits = [...new Set(profiles.flatMap((p) => p.subreddits))]
 
+  console.log(`[cron] Loaded ${profiles.length} profile(s). Unique subreddits: [${uniqueSubreddits.join(', ')}]`)
+
   // 3. Fetch Reddit posts — one subreddit at a time, failures isolated
   const redditBySubreddit = new Map<string, NormalizedPost[]>()
   await Promise.all(
     uniqueSubreddits.map(async (subreddit) => {
       try {
         const posts = await fetchSubredditPosts(subreddit)
-        redditBySubreddit.set(subreddit, posts.map(fromReddit))
+        const normalized = posts.map(fromReddit)
+        redditBySubreddit.set(subreddit, normalized)
+        console.log(`[cron] r/${subreddit}: fetched ${normalized.length} post(s)`)
       } catch {
         console.error(`[cron] Failed to fetch r/${subreddit}`)
         redditBySubreddit.set(subreddit, [])
@@ -65,6 +76,7 @@ export async function GET(request: NextRequest) {
   let hnStories: NormalizedPost[] = []
   try {
     hnStories = (await fetchHNStories(150)).map(fromHN)
+    console.log(`[cron] HN: fetched ${hnStories.length} story(ies)`)
   } catch {
     console.error('[cron] Failed to fetch HN stories')
   }
@@ -73,6 +85,8 @@ export async function GET(request: NextRequest) {
   let totalOpportunitiesSaved = 0
 
   for (const profile of profiles) {
+    console.log(`[cron] Profile ${profile.id} — keywords: [${profile.keywords.join(', ')}]`)
+
     // Reddit: only posts from subreddits this profile tracks
     const profileRedditPosts = profile.subreddits.flatMap(
       (s) => redditBySubreddit.get(s) ?? []
@@ -82,9 +96,21 @@ export async function GET(request: NextRequest) {
       matchesKeywords(post, profile.keywords)
     )
 
+    console.log(
+      `[cron] Profile ${profile.id} — candidates: ${candidates.length}, keyword-matched: ${matched.length}` +
+      (matched.length > 0 ? ` (${matched.map((p) => JSON.stringify(p.title.slice(0, 60))).join(', ')})` : '')
+    )
+
     if (matched.length === 0) continue
 
-    const postsToScore: PostToScore[] = matched.map((post) => ({
+    // Cap at 30 most recent to stay within the cron time limit
+    const capped = matched
+      .sort((a, b) => b.postedAt.getTime() - a.postedAt.getTime())
+      .slice(0, 30)
+
+    console.log(`[cron] Profile ${profile.id} — capped to ${capped.length} post(s) for scoring (was ${matched.length})`)
+
+    const postsToScore: PostToScore[] = capped.map((post) => ({
       externalId: post.externalId,
       title: post.title,
       body: post.body,
@@ -102,11 +128,13 @@ export async function GET(request: NextRequest) {
       return []
     })
 
+    console.log(`[cron] Profile ${profile.id} — scored: ${scored.length}, passing relevance>=40: ${scored.filter((p) => p.relevanceScore >= 40).length}`)
+
     scored = scored.filter((p) => p.relevanceScore >= 40)
     if (scored.length === 0) continue
 
     // Re-attach the fields scorer doesn't return (author, url, score, platform)
-    const metaMap = new Map(matched.map((p) => [p.externalId, p]))
+    const metaMap = new Map(capped.map((p) => [p.externalId, p]))
 
     try {
       const result = await prisma.opportunity.createMany({
@@ -132,11 +160,14 @@ export async function GET(request: NextRequest) {
         }),
         skipDuplicates: true,
       })
+      console.log(`[cron] Profile ${profile.id} — saved ${result.count} new opportunity(ies) (${scored.length - result.count} skipped as duplicates)`)
       totalOpportunitiesSaved += result.count
     } catch (err) {
       console.error(`[cron] Failed to save opportunities for user ${profile.id}:`, err)
     }
   }
+
+  console.log(`[cron] Done — totalOpportunitiesSaved: ${totalOpportunitiesSaved}`)
 
   return NextResponse.json({
     success: true,

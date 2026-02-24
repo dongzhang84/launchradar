@@ -2,7 +2,7 @@ import OpenAI from 'openai'
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-const BATCH_SIZE = 20
+const BATCH_SIZE = 10
 
 export interface PostToScore {
   externalId: string
