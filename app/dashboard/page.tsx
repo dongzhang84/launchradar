@@ -48,7 +48,7 @@ export default async function DashboardPage({
     relevanceScore: opp.relevanceScore,
     intentLevel: opp.intentLevel,
     reasoning: opp.reasoning,
-    suggestedReplies: opp.suggestedReplies,
+    suggestedReplies: (opp.suggestedReplies ?? []) as unknown as import('@/components/ReplyModal').ReplyVariation[],
     replied: opp.replied,
     createdAt: opp.createdAt.toISOString(),
   }))

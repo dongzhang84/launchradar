@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import StatsBar from '@/components/StatsBar'
 import OpportunityCard from '@/components/OpportunityCard'
-import ReplyModal from '@/components/ReplyModal'
+import ReplyModal, { type ReplyVariation } from '@/components/ReplyModal'
 
 export interface SerializedOpportunity {
   id: string
@@ -19,7 +19,7 @@ export interface SerializedOpportunity {
   relevanceScore: number
   intentLevel: string
   reasoning: string
-  suggestedReplies: unknown
+  suggestedReplies: ReplyVariation[]
   replied: boolean
   createdAt: string
 }
@@ -132,11 +132,14 @@ export default function DashboardClient({ opportunities, stats, banner }: Props)
         )}
       </div>
 
-      <ReplyModal
-        opportunity={selectedOpp}
-        open={selectedOpp !== null}
-        onClose={() => setSelectedOpp(null)}
-      />
+      {selectedOpp && (
+        <ReplyModal
+          opportunity={selectedOpp}
+          isOpen={true}
+          onClose={() => setSelectedOpp(null)}
+          onReplied={() => setSelectedOpp(null)}
+        />
+      )}
     </div>
   )
 }
