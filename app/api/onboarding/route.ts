@@ -38,14 +38,26 @@ export async function POST(request: NextRequest) {
       subreddits: string[]
     }
 
-    await prisma.profile.update({
+    await prisma.profile.upsert({
       where: { id: user.id },
-      data: {
+      update: {
         productDescription,
         targetCustomer,
         keywords,
         subreddits,
         onboardingComplete: true,
+      },
+      create: {
+        id: user.id,
+        email: user.email ?? '',
+        password: '',
+        productDescription,
+        targetCustomer,
+        keywords,
+        subreddits,
+        onboardingComplete: true,
+        subscriptionStatus: 'trialing',
+        trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       },
     })
 
