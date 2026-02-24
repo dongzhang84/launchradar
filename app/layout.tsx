@@ -13,9 +13,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "LaunchRadar — Find customers on Reddit & HN",
+  title: "LaunchRadar — Find your first customers on Reddit & HN",
   description:
-    "LaunchRadar monitors Reddit and Hacker News and sends you 3–5 high-intent leads daily with AI-suggested replies.",
+    "Stop scrolling Reddit for hours. Get a daily digest of 3-5 discussions where people need your product.",
+  openGraph: {
+    title: "LaunchRadar — Find your first customers on Reddit & HN",
+    description:
+      "Stop scrolling Reddit for hours. Get a daily digest of 3-5 discussions where people need your product.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
