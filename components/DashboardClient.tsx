@@ -34,7 +34,7 @@ type Filter = 'all' | 'high' | 'medium' | 'low'
 
 interface Props {
   opportunities: SerializedOpportunity[]
-  stats: { opportunitiesFound: number; repliesMade: number; conversions: number }
+  stats: { opportunitiesFound: number; repliesMade: number; skipped: number }
   banner: DashboardBanner
 }
 
@@ -47,8 +47,17 @@ const FILTERS: { label: string; value: Filter }[] = [
 
 export default function DashboardClient({ opportunities, stats, banner }: Props) {
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set())
+  const [repliedIds, setRepliedIds] = useState<Set<string>>(new Set())
+  const [repliedCount, setRepliedCount] = useState(stats.repliesMade)
+  const [skippedCount, setSkippedCount] = useState(stats.skipped)
   const [activeFilter, setActiveFilter] = useState<Filter>('all')
   const [selectedOpp, setSelectedOpp] = useState<SerializedOpportunity | null>(null)
+
+  function markReplied(id: string) {
+    if (repliedIds.has(id)) return
+    setRepliedIds((prev) => new Set([...prev, id]))
+    setRepliedCount((prev) => prev + 1)
+  }
 
   const visible = opportunities.filter((opp) => {
     if (dismissedIds.has(opp.id)) return false
@@ -83,7 +92,11 @@ export default function DashboardClient({ opportunities, stats, banner }: Props)
 
       <div className="mx-auto max-w-3xl px-4 py-8 space-y-6">
         {/* Stats */}
-        <StatsBar {...stats} />
+        <StatsBar
+          opportunitiesFound={stats.opportunitiesFound}
+          repliesMade={repliedCount}
+          skipped={skippedCount}
+        />
 
         {/* Filter tabs */}
         <div className="flex gap-2 border-b border-border">
@@ -113,14 +126,13 @@ export default function DashboardClient({ opportunities, stats, banner }: Props)
               <OpportunityCard
                 key={opp.id}
                 opportunity={opp}
+                externalReplied={repliedIds.has(opp.id)}
                 onViewReply={() => setSelectedOpp(opp)}
-                onReplied={(id) => {
-                  // Opportunity stays visible with green button — no list change needed.
-                  void id
-                }}
-                onDismissed={(id) =>
+                onReplied={(id) => markReplied(id)}
+                onDismissed={(id) => {
                   setDismissedIds((prev) => new Set([...prev, id]))
-                }
+                  setSkippedCount((prev) => prev + 1)
+                }}
               />
             ))}
           </div>
@@ -132,7 +144,10 @@ export default function DashboardClient({ opportunities, stats, banner }: Props)
           opportunity={selectedOpp}
           isOpen={true}
           onClose={() => setSelectedOpp(null)}
-          onReplied={() => setSelectedOpp(null)}
+          onReplied={() => {
+            markReplied(selectedOpp.id)
+            setSelectedOpp(null)
+          }}
         />
       )}
     </div>

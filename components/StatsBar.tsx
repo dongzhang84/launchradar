@@ -1,14 +1,14 @@
 interface Props {
   opportunitiesFound: number
   repliesMade: number
-  conversions: number
+  skipped: number
 }
 
-export default function StatsBar({ opportunitiesFound, repliesMade, conversions }: Props) {
+export default function StatsBar({ opportunitiesFound, repliesMade, skipped }: Props) {
   const stats = [
     { label: 'Found', value: opportunitiesFound },
     { label: 'Replied', value: repliesMade },
-    { label: 'Won', value: conversions },
+    { label: 'Skipped', value: skipped },
   ]
 
   return (

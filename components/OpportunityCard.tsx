@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,7 @@ import type { SerializedOpportunity } from '@/components/DashboardClient'
 
 interface Props {
   opportunity: SerializedOpportunity
+  externalReplied?: boolean
   onViewReply: () => void
   onReplied: (id: string) => void
   onDismissed: (id: string) => void
@@ -37,8 +38,12 @@ function hoursAgo(isoString: string): number {
   return Math.round((Date.now() - new Date(isoString).getTime()) / (1000 * 60 * 60))
 }
 
-export default function OpportunityCard({ opportunity, onViewReply, onReplied, onDismissed }: Props) {
+export default function OpportunityCard({ opportunity, externalReplied, onViewReply, onReplied, onDismissed }: Props) {
   const [replied, setReplied] = useState<boolean>(opportunity.replied === true)
+
+  useEffect(() => {
+    if (externalReplied) setReplied(true)
+  }, [externalReplied])
   const [replying, setReplying] = useState(false)
   const [fading, setFading] = useState(false)
   const [hidden, setHidden] = useState(false)
@@ -111,22 +116,27 @@ export default function OpportunityCard({ opportunity, onViewReply, onReplied, o
           {/* Actions */}
           <div className="flex gap-2 pt-1">
             <Button size="sm" variant="outline" onClick={onViewReply}>
-              View + Reply
+              View Thread
             </Button>
 
             {replied ? (
-              <Button size="sm" variant="outline" disabled
-                className="text-green-600 border-green-300 bg-green-50 hover:bg-green-50 hover:text-green-600">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled
+                className="text-green-600 border-green-300 bg-green-50 hover:bg-green-50 hover:text-green-600 cursor-default"
+              >
                 Replied ✓
               </Button>
             ) : (
               <Button
                 size="sm"
-                variant="outline"
+                variant="ghost"
                 onClick={handleReply}
                 disabled={replying}
+                className="text-muted-foreground hover:text-foreground"
               >
-                {replying ? 'Saving…' : 'Replied ✓'}
+                {replying ? 'Saving…' : 'Mark Replied'}
               </Button>
             )}
 

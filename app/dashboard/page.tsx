@@ -18,9 +18,6 @@ export default async function DashboardPage({
   const profile = await prisma.profile.findUnique({
     where: { id: user.id },
     select: {
-      opportunitiesFound: true,
-      repliesMade: true,
-      conversions: true,
       subscriptionStatus: true,
       trialEndsAt: true,
       onboardingComplete: true,
@@ -29,11 +26,18 @@ export default async function DashboardPage({
 
   if (!profile || !profile.onboardingComplete) redirect('/onboarding')
 
-  const rawOpportunities = await prisma.opportunity.findMany({
-    where: { userId: user.id, dismissed: false },
-    orderBy: { createdAt: 'desc' },
-    take: 50,
-  })
+  const [rawOpportunities, totalFound, totalReplied, totalSkipped] = await Promise.all([
+    prisma.opportunity.findMany({
+      where: { userId: user.id, dismissed: false },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    }),
+    prisma.opportunity.count({ where: { userId: user.id } }),
+    prisma.opportunity.count({ where: { userId: user.id, replied: true } }),
+    prisma.opportunity.count({ where: { userId: user.id, dismissed: true } }),
+  ])
+
+  console.log('[dashboard] user.id:', user.id, '| found:', totalFound, '| replied:', totalReplied, '| skipped:', totalSkipped)
 
   const opportunities: SerializedOpportunity[] = rawOpportunities.map((opp) => ({
     id: opp.id,
@@ -77,9 +81,9 @@ export default async function DashboardPage({
       <DashboardClient
         opportunities={opportunities}
         stats={{
-          opportunitiesFound: profile.opportunitiesFound,
-          repliesMade: profile.repliesMade,
-          conversions: profile.conversions,
+          opportunitiesFound: totalFound,
+          repliesMade: totalReplied,
+          skipped: totalSkipped,
         }}
         banner={banner}
       />
