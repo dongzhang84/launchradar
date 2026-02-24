@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/client'
 import { fetchSubredditPosts, type RedditPost } from '@/lib/reddit'
 import { fetchHNStories, type HNStory } from '@/lib/hn'
+import { scorePosts, type PostToScore } from '@/lib/scorer'
 
 // Respected on Vercel Pro/Enterprise; Hobby plan caps at 10s regardless.
 export const maxDuration = 60
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
 
   // 1. Load all profiles (select only what we need)
   const profiles = await prisma.user.findMany({
-    select: { id: true, keywords: true, subreddits: true },
+    select: { id: true, keywords: true, subreddits: true, productDescription: true, targetCustomer: true },
   })
 
   // 2. Unique subreddits across all profiles
@@ -83,25 +84,52 @@ export async function GET(request: NextRequest) {
 
     if (matched.length === 0) continue
 
+    const postsToScore: PostToScore[] = matched.map((post) => ({
+      externalId: post.externalId,
+      title: post.title,
+      body: post.body,
+      subreddit: post.subreddit,
+      postedAt: post.postedAt,
+      commentCount: post.commentCount,
+    }))
+
+    let scored = await scorePosts(
+      postsToScore,
+      profile.productDescription ?? '',
+      profile.targetCustomer ?? ''
+    ).catch((err) => {
+      console.error(`[cron] Scoring failed for user ${profile.id}:`, err)
+      return []
+    })
+
+    scored = scored.filter((p) => p.relevanceScore >= 40)
+    if (scored.length === 0) continue
+
+    // Re-attach the fields scorer doesn't return (author, url, score, platform)
+    const metaMap = new Map(matched.map((p) => [p.externalId, p]))
+
     try {
       const result = await prisma.opportunity.createMany({
-        data: matched.map((post) => ({
-          userId: profile.id,
-          platform: post.platform,
-          externalId: post.externalId,
-          url: post.url,
-          title: post.title,
-          body: post.body || null,
-          subreddit: post.subreddit,
-          author: post.author,
-          score: post.score,
-          commentCount: post.commentCount,
-          postedAt: post.postedAt,
-          relevanceScore: 50,
-          intentLevel: 'medium',
-          reasoning: 'pending',
-          suggestedReplies: [],
-        })),
+        data: scored.map((p) => {
+          const meta = metaMap.get(p.externalId)!
+          return {
+            userId: profile.id,
+            platform: meta.platform,
+            externalId: p.externalId,
+            url: meta.url,
+            title: p.title,
+            body: p.body || null,
+            subreddit: p.subreddit,
+            author: meta.author,
+            score: meta.score,
+            commentCount: p.commentCount,
+            postedAt: p.postedAt,
+            relevanceScore: p.relevanceScore,
+            intentLevel: p.intentLevel,
+            reasoning: p.reasoning,
+            suggestedReplies: [],
+          }
+        }),
         skipDuplicates: true,
       })
       totalOpportunitiesSaved += result.count
