@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/db/client'
 import DashboardClient from '@/components/DashboardClient'
 import type { SerializedOpportunity, DashboardBanner } from '@/components/DashboardClient'
+import Header from '@/components/Header'
 
 export default async function DashboardPage({
   searchParams,
@@ -71,14 +72,17 @@ export default async function DashboardPage({
   }
 
   return (
-    <DashboardClient
-      opportunities={opportunities}
-      stats={{
-        opportunitiesFound: profile.opportunitiesFound,
-        repliesMade: profile.repliesMade,
-        conversions: profile.conversions,
-      }}
-      banner={banner}
-    />
+    <>
+      <Header email={user.email ?? ''} />
+      <DashboardClient
+        opportunities={opportunities}
+        stats={{
+          opportunitiesFound: profile.opportunitiesFound,
+          repliesMade: profile.repliesMade,
+          conversions: profile.conversions,
+        }}
+        banner={banner}
+      />
+    </>
   )
 }
