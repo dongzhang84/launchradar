@@ -11,7 +11,7 @@ const intentOrder: Record<string, number> = { high: 0, medium: 1, low: 2 }
 export async function sendDailyDigest(
   profileId: string
 ): Promise<{ sent: boolean; count: number }> {
-  const profile = await prisma.user.findUnique({
+  const profile = await prisma.profile.findUnique({
     where: { id: profileId },
     select: {
       email: true,
@@ -114,7 +114,7 @@ export async function sendDailyDigest(
       where: { id: { in: opportunities.map((o) => o.id) } },
       data: { includedInDigest: true },
     }),
-    prisma.user.update({
+    prisma.profile.update({
       where: { id: profileId },
       data: { opportunitiesFound: { increment: n } },
     }),

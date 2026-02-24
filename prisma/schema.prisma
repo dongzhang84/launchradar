@@ -8,7 +8,7 @@ datasource db {
   provider = "postgresql"
 }
 
-model User {
+model Profile {
   id                  String    @id @default(cuid())
   email               String    @unique
   name                String?
@@ -41,7 +41,7 @@ model User {
 model Opportunity {
   id              String    @id @default(cuid())
   userId          String
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            Profile   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   platform        String
   externalId      String
@@ -77,7 +77,7 @@ model Opportunity {
 model Feedback {
   id              String      @id @default(cuid())
   userId          String
-  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            Profile     @relation(fields: [userId], references: [id], onDelete: Cascade)
   opportunityId   String
   opportunity     Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
 

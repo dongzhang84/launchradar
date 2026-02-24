@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const profiles = await prisma.user.findMany({
+  const profiles = await prisma.profile.findMany({
     where: {
       emailEnabled: true,
       subscriptionStatus: { in: ['active', 'trialing'] },

@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
   }
 
   // 1. Load all profiles (select only what we need)
-  const profiles = await prisma.user.findMany({
+  const profiles = await prisma.profile.findMany({
     select: { id: true, keywords: true, subreddits: true, productDescription: true, targetCustomer: true },
   })
 

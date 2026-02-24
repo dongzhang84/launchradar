@@ -14,7 +14,7 @@ export default async function DashboardPage({
 
   if (!user) redirect('/auth/login')
 
-  const profile = await prisma.user.findUnique({
+  const profile = await prisma.profile.findUnique({
     where: { id: user.id },
     select: {
       opportunitiesFound: true,

@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       subreddits: string[]
     }
 
-    await prisma.user.update({
+    await prisma.profile.update({
       where: { id: user.id },
       data: {
         productDescription,

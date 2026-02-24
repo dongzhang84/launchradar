@@ -3,7 +3,7 @@
 import { prisma } from '@/lib/db/client'
 
 export async function createProfile(userId: string, email: string) {
-  await prisma.user.create({
+  await prisma.profile.create({
     data: {
       id: userId,
       email,
