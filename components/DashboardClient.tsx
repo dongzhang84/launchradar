@@ -4,6 +4,7 @@ import { useState } from 'react'
 import StatsBar from '@/components/StatsBar'
 import OpportunityCard from '@/components/OpportunityCard'
 import ReplyModal, { type ReplyVariation } from '@/components/ReplyModal'
+import BuyModal from '@/components/BuyModal'
 
 export interface SerializedOpportunity {
   id: string
@@ -52,6 +53,7 @@ export default function DashboardClient({ opportunities, stats, banner }: Props)
   const [skippedCount, setSkippedCount] = useState(stats.skipped)
   const [activeFilter, setActiveFilter] = useState<Filter>('all')
   const [selectedOpp, setSelectedOpp] = useState<SerializedOpportunity | null>(null)
+  const [buyModalOpen, setBuyModalOpen] = useState(false)
 
   function markReplied(id: string) {
     if (repliedIds.has(id)) return
@@ -76,17 +78,17 @@ export default function DashboardClient({ opportunities, stats, banner }: Props)
       {banner?.type === 'trial' && (
         <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-3 text-center text-sm text-yellow-800">
           Free trial — {banner.daysRemaining} day{banner.daysRemaining !== 1 ? 's' : ''} remaining ·{' '}
-          <a href="/settings" className="font-semibold underline">
+          <button onClick={() => setBuyModalOpen(true)} className="font-semibold underline">
             Upgrade Now
-          </a>
+          </button>
         </div>
       )}
       {banner?.type === 'expired' && (
         <div className="bg-red-50 border-b border-red-200 px-4 py-3 text-center text-sm text-red-800">
           Your trial has ended ·{' '}
-          <a href="/settings" className="font-semibold underline">
+          <button onClick={() => setBuyModalOpen(true)} className="font-semibold underline">
             Upgrade Now
-          </a>
+          </button>
         </div>
       )}
 
@@ -150,6 +152,8 @@ export default function DashboardClient({ opportunities, stats, banner }: Props)
           }}
         />
       )}
+
+      <BuyModal isOpen={buyModalOpen} onClose={() => setBuyModalOpen(false)} />
     </div>
   )
 }
