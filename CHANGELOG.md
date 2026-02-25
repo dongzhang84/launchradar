@@ -1,0 +1,122 @@
+# Changelog
+
+All notable changes to LaunchRadar are documented in this file.
+
+Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+---
+
+## [0.8.0] — 2026-02-24
+
+### Added
+- Settings page with editable product description, target customer, keywords, and subreddits
+- Re-generate Keywords button calls `/api/onboarding` to refresh keywords from updated product info
+- Email preferences toggle and delivery time display
+- Subscription status card with trial countdown and Upgrade to Pro button
+- `PATCH /api/settings` route for persisting all settings fields
+
+### Fixed
+- Stats (opportunities found, replies made, skipped) now persist correctly on page refresh — counts are loaded server-side from Prisma rather than derived from client state
+
+---
+
+## [0.7.0] — 2026-02-24
+
+### Added
+- Stripe subscription flow at $19/month
+- `POST /api/stripe/checkout` — creates Stripe Checkout Session with `profileId` in metadata and `customer_email` from Profile
+- `POST /api/stripe/webhook` — handles `checkout.session.completed` (sets `subscriptionStatus: "active"`, saves `stripeCustomerId`) and `customer.subscription.deleted` (sets `subscriptionStatus: "canceled"`)
+- `BuyModal` component (Shadcn Dialog) with feature list, animated loading spinner, and "Maybe later" dismiss link
+- Upgrade Now button in dashboard trial/expired banners opens `BuyModal`
+- Upgrade to Pro button in Settings page opens `BuyModal`
+- `?upgraded=true` query param on return from Stripe shows success banner
+
+### Fixed
+- Webhook uses `request.text()` (not `request.json()`) to preserve raw body for Stripe signature verification
+- Replaced "Stripe integration coming soon" placeholder in Settings with real `BuyModal`
+
+---
+
+## [0.6.0] — 2026-02-23
+
+### Added
+- Dashboard page with server-side data fetching (opportunities, stats, subscription status)
+- `DashboardClient` — client component with filter tabs (All / High / Medium / Low intent), opportunity cards, and trial/expired/upgraded banners
+- `OpportunityCard` — displays platform, subreddit, author, score, intent badge, reasoning, and action buttons
+- `StatsBar` — shows opportunities found, replies made, and skipped counts
+- `ReplyModal` — Shadcn Dialog showing suggested reply variations with "Mark as Replied" action
+- `POST /api/opportunities/[id]/reply` — marks opportunity as replied in Prisma
+- `POST /api/feedback` — records relevance feedback and dismisses opportunity
+- Dismiss button on opportunity cards with optimistic UI update
+- Header component with email display and settings/logout links
+
+### Fixed
+- Missing `/api/opportunities/[id]/reply` and `/api/feedback` routes that dashboard buttons depended on
+
+---
+
+## [0.5.0] — 2026-02-23
+
+### Added
+- `POST /api/cron/send-digests` — finds users with unsent opportunities, renders React Email template, sends via Resend
+- `lib/digest.ts` — selects top opportunities per user, marks them as included in digest
+- `lib/email-templates/digest.tsx` — React Email template with opportunity cards and reply CTAs
+- `digestFrequency`, `emailEnabled`, and `digestTime` fields on Profile for per-user delivery preferences
+- Vercel cron job configuration in `vercel.json` for daily digest at 08:00 UTC
+
+---
+
+## [0.4.0] — 2026-02-23
+
+### Added
+- OpenAI-powered opportunity scorer (`lib/scorer.ts`) — scores relevance 0–100, classifies intent as high/medium/low, generates reasoning and suggested reply variations
+- Onboarding wizard (`app/onboarding/page.tsx`) — multi-step flow: product description → target customer → keyword review → completion
+- `POST /api/onboarding` — handles `generate-keywords` step (calls OpenAI) and `complete` step (saves profile, sets `onboardingComplete: true`)
+- `lib/keyword-generator.ts` — generates keywords and target subreddits from product description using OpenAI
+- `suggestedReplies` stored as JSON on Opportunity model
+- Redirect to `/onboarding` for users who have not completed onboarding
+
+### Fixed
+- Keyword matching switched from phrase-level to word-level matching — single-word keywords now correctly match within longer strings instead of requiring exact phrase presence
+
+---
+
+## [0.3.0] — 2026-02-22
+
+### Added
+- `POST /api/cron/fetch-posts` — fetches posts from Reddit and Hacker News, scores with OpenAI, stores in Opportunity table
+- `lib/reddit.ts` — fetches posts from configured subreddits using Reddit's public `.json` API
+- `lib/hn.ts` — fetches posts from Hacker News Algolia search API
+- Upstash Redis deduplication — tracks seen `externalId` values to avoid re-processing posts
+- `Opportunity` model in Prisma schema with full scoring fields
+
+### Fixed
+- Switched Reddit integration from OAuth to public `.json` API (`reddit.com/r/{sub}/new.json`) — OAuth credentials were unavailable in this environment
+- Cron handler now limits to 30 posts per run with batch size of 10 to stay within Vercel's 10-second function timeout
+
+---
+
+## [0.2.0] — 2026-02-22
+
+### Added
+- Supabase email/password authentication with SSR cookie handling via `@supabase/ssr`
+- Login (`/auth/login`) and Register (`/auth/register`) pages
+- Next.js middleware protecting all routes except `/`, `/auth/*`, `/privacy`, `/terms`
+- `Profile` model in Prisma with subscription fields (`stripeCustomerId`, `subscriptionStatus`, `trialEndsAt`, `currentPeriodEnd`)
+- Prisma client singleton in `lib/db/client.ts` using `@prisma/adapter-pg` with SSL
+
+### Fixed
+- Prisma v7 requires explicit `PrismaPg` adapter — `new PrismaClient()` without an adapter throws at runtime; all instantiation goes through `lib/db/client.ts`
+- `DATABASE_URL` must point to Supabase Transaction Pooler (port `6543`) — using the direct connection URL caused P1001 "Can't reach database server" errors in serverless functions
+
+---
+
+## [0.1.0] — 2026-02-17
+
+### Added
+- Next.js 16 project with App Router and TypeScript
+- Tailwind CSS v4 with Shadcn UI components (Button, Card, Dialog, Input, Badge, Label, Textarea, DropdownMenu)
+- Prisma ORM v7 with PostgreSQL via `@prisma/adapter-pg`
+- Landing page (`app/page.tsx`) with hero, features, and pricing sections
+- Privacy policy and Terms of Service pages
+- `NEXT_PUBLIC_APP_URL` environment variable for base URL (not `NEXTAUTH_URL`)

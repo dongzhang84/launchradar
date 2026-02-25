@@ -1,25 +1,25 @@
 # LaunchRadar - Implementation Guide
 
-**Status**: 🚧 In Progress  
-**Repo**: github.com/[your-username]/launchradar (private)  
-**Last Updated**: February 22, 2026
+**Status**: ✅ Phases 1-9 Complete  
+**Live URL**: https://launchradar-five.vercel.app  
+**Last Updated**: February 24, 2026
 
 ---
 
 ## 📊 Project Overview
 
-LaunchRadar finds Reddit & Hacker News discussions where people need your product. It sends indie hackers a daily digest of 3-5 high-intent opportunities with AI-generated reply suggestions. $29/mo.
+LaunchRadar finds Reddit & Hacker News discussions where people need your product. It sends indie hackers a daily digest of high-intent opportunities. $19/mo.
 
-**Stack**: Next.js 14 + Supabase (Auth + PostgreSQL) + Prisma + OpenAI + Reddit API + HN API + Resend + Stripe + Vercel
+**Stack**: Next.js 14 + Supabase (Auth + PostgreSQL) + Prisma + OpenAI + Reddit public API + HN API + Resend + Stripe + Vercel
 
 ---
 
 ## 🏗️ Architecture
 
 **Frontend**: Next.js 14 App Router, TypeScript, Tailwind CSS, Shadcn/ui  
-**Backend**: Next.js API Routes, Supabase Auth, Prisma ORM, Upstash Redis  
-**AI**: OpenAI GPT-4o-mini (scoring), GPT-4o (reply generation)  
-**Data**: Reddit API (OAuth2), HN Firebase API  
+**Backend**: Next.js API Routes, Supabase Auth, Prisma ORM (v7 with @prisma/adapter-pg), Upstash Redis  
+**AI**: OpenAI GPT-4o-mini (scoring), GPT-4o (keyword generation)  
+**Data**: Reddit public .json API (no auth needed), HN Firebase API  
 **Services**: Resend (email), Stripe (subscriptions), Vercel Cron  
 
 ---
@@ -34,13 +34,11 @@ launchradar/
 │   │   ├── opportunities/[id]/reply/route.ts
 │   │   ├── feedback/route.ts
 │   │   ├── settings/route.ts
-│   │   ├── track/replied/route.ts
 │   │   ├── cron/
 │   │   │   ├── fetch-posts/route.ts
 │   │   │   └── send-digests/route.ts
 │   │   └── stripe/
 │   │       ├── checkout/route.ts
-│   │       ├── portal/route.ts
 │   │       └── webhook/route.ts
 │   ├── auth/
 │   │   ├── login/page.tsx
@@ -55,13 +53,13 @@ launchradar/
 │   ├── page.tsx
 │   └── layout.tsx
 ├── components/
-│   ├── OnboardingWizard.tsx
+│   ├── DashboardClient.tsx
+│   ├── Header.tsx
 │   ├── OpportunityCard.tsx
 │   ├── ReplyModal.tsx
-│   ├── FeedbackButtons.tsx
 │   ├── StatsBar.tsx
 │   ├── BuyModal.tsx
-│   └── Header.tsx
+│   └── SettingsClient.tsx
 ├── lib/
 │   ├── supabase/
 │   │   ├── client.ts
@@ -72,7 +70,6 @@ launchradar/
 │   ├── reddit.ts
 │   ├── hn.ts
 │   ├── scorer.ts
-│   ├── reply-generator.ts
 │   ├── keyword-generator.ts
 │   ├── digest.ts
 │   └── email-templates/
@@ -90,16 +87,20 @@ launchradar/
 
 ```prisma
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Profile {
   id                  String    @id
   email               String    @unique
+  name                String?
+  password            String?
 
   stripeCustomerId    String?   @unique
   subscriptionStatus  String?   // trialing | active | canceled | past_due
@@ -120,7 +121,6 @@ model Profile {
   conversions         Int       @default(0)
 
   createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
 
   opportunities       Opportunity[]
   feedback            Feedback[]
@@ -128,8 +128,8 @@ model Profile {
 
 model Opportunity {
   id               String    @id @default(cuid())
-  profileId        String
-  profile          Profile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  userId           String
+  profile          Profile   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   platform         String
   externalId       String
@@ -156,15 +156,15 @@ model Opportunity {
   createdAt        DateTime  @default(now())
   feedback         Feedback[]
 
-  @@unique([profileId, externalId])
-  @@index([profileId, relevanceScore])
-  @@index([profileId, createdAt])
+  @@unique([userId, externalId])
+  @@index([userId, relevanceScore])
+  @@index([userId, createdAt])
 }
 
 model Feedback {
   id            String      @id @default(cuid())
-  profileId     String
-  profile       Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  userId        String
+  profile       Profile     @relation(fields: [userId], references: [id], onDelete: Cascade)
   opportunityId String
   opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
 
@@ -173,7 +173,7 @@ model Feedback {
 
   createdAt     DateTime    @default(now())
 
-  @@unique([profileId, opportunityId])
+  @@unique([userId, opportunityId])
 }
 ```
 
@@ -185,32 +185,30 @@ model Feedback {
 # .env.local
 
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
 
-DATABASE_URL=postgresql://postgres:[PASSWORD]@db.xxx.supabase.co:5432/postgres?pgbouncer=true&connection_limit=1
-DIRECT_URL=postgresql://postgres:[PASSWORD]@db.xxx.supabase.co:5432/postgres
+# IMPORTANT: Use the Supabase Transaction Pooler URL (port 6543) for both local and Vercel
+# Get this from: Supabase Dashboard → Connect button → Transaction pooler
+DATABASE_URL=postgresql://postgres.[ref]:[PASSWORD]@aws-0-[region].pooler.supabase.com:6543/postgres
 
 OPENAI_API_KEY=sk-proj-...
-
-REDDIT_CLIENT_ID=
-REDDIT_CLIENT_SECRET=
-REDDIT_USER_AGENT=LaunchRadar/1.0 by u/[your-username]
 
 UPSTASH_REDIS_REST_URL=
 UPSTASH_REDIS_REST_TOKEN=
 
 RESEND_API_KEY=re_...
-RESEND_FROM_EMAIL=digest@launchradar.com
+RESEND_FROM_EMAIL=onboarding@resend.dev  # use this until you have a verified domain
 
 STRIPE_SECRET_KEY=sk_test_...
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
 STRIPE_PRICE_ID=price_...
+STRIPE_WEBHOOK_SECRET=whsec_...  # from Stripe Dashboard → Webhooks (leave empty until configured)
 
-CRON_SECRET=
-NEXTAUTH_URL=http://localhost:3000
+CRON_SECRET=  # generate with: openssl rand -base64 32
+NEXT_PUBLIC_APP_URL=http://localhost:3000  # https://launchradar-five.vercel.app in production
 ```
+
+> **Note**: `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is NOT needed — we use Stripe-hosted Checkout, not a custom payment form. `REDDIT_CLIENT_ID` / `REDDIT_CLIENT_SECRET` are NOT needed — we use Reddit's public .json API.
 
 ---
 
@@ -229,16 +227,18 @@ NEXTAUTH_URL=http://localhost:3000
 
 ---
 
-### Phase 2: Supabase Clients + Prisma Singleton + Route Protection
+### Phase 2: Supabase Clients + Prisma Singleton + Route Protection ✅ DONE
 
 **Goal**: Proper Supabase client setup, create Profile on register, protect routes.
+
+---
 
 **CC Prompt 2A — Supabase clients + Prisma singleton:**
 
 ```
 I'm building LaunchRadar with Next.js 14 App Router and Supabase Auth.
 I already have @supabase/supabase-js and @supabase/ssr installed.
-I have a Prisma schema already set up with a Profile model.
+I have a Prisma v7 schema already set up with a Profile model.
 
 Create these 4 files:
 
@@ -258,10 +258,25 @@ Create these 4 files:
    - Bypasses RLS
    - Export as named export: supabaseAdmin
 
-4. lib/db/client.ts
-   - Prisma client singleton (handles Next.js hot reload in dev)
-   - Use the standard global pattern: global.__prisma || new PrismaClient()
-   - Export as: export const prisma = ...
+4. lib/db/client.ts (Prisma v7 with adapter — IMPORTANT)
+   - Prisma v7 no longer accepts empty constructor or datasourceUrl option
+   - Must use @prisma/adapter-pg and pg packages
+   - Install if needed: @prisma/adapter-pg pg @types/pg
+   
+   Use this exact pattern:
+   import { PrismaClient } from '@prisma/client'
+   import { PrismaPg } from '@prisma/adapter-pg'
+   
+   const adapter = new PrismaPg({
+     connectionString: process.env.DATABASE_URL!,
+     ssl: { rejectUnauthorized: false },
+   })
+   
+   declare global { var __prisma: PrismaClient | undefined }
+   export const prisma = global.__prisma ?? new PrismaClient({ adapter })
+   if (process.env.NODE_ENV !== 'production') { global.__prisma = prisma }
+   
+   The ssl: { rejectUnauthorized: false } is required for Supabase connections from Vercel.
 ```
 
 ---
@@ -289,64 +304,55 @@ Export config with matcher that excludes _next/static, _next/image, favicon.ico.
 Update app/auth/register/page.tsx in LaunchRadar.
 
 After successful supabase.auth.signUp({ email, password }):
-1. Create a Profile row in the database using Prisma with:
+1. Create a Profile row in the database using Prisma upsert (not create, to handle edge cases):
    - id: the Supabase user.id
    - email: the user's email
    - subscriptionStatus: "trialing"
    - trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 2. Redirect to /onboarding
 
-The Profile model fields relevant here:
-  id String @id
-  email String @unique
-  subscriptionStatus String?
-  trialEndsAt DateTime?
-  onboardingComplete Boolean @default(false)
-
 Use prisma from lib/db/client.ts.
 Do the Profile creation server-side (API route or server action).
 Handle errors — if Profile creation fails, still redirect to /onboarding.
+Use upsert instead of create so re-registering the same email doesn't crash.
 ```
 
 **Test after Phase 2**: Register → check Supabase Auth dashboard for user + Profile table for matching row. Visit `/dashboard` without logging in → should redirect to `/auth/login`.
 
+> ⚠️ **Supabase note**: Email confirmation is enabled by default. For development, disable it: Supabase Dashboard → Authentication → Providers → Email → disable "Confirm email".
+
 ---
 
-### Phase 3: Reddit + HN Data Pipeline
+### Phase 3: Reddit + HN Data Pipeline ✅ DONE
 
 **Goal**: Fetch posts from Reddit and HN, store in Opportunity table.
 
 **Before starting**:
 - Set up Upstash Redis at console.upstash.com → Create database → copy REST URL + Token → add to `.env.local`
-- Set up Reddit API at reddit.com/prefs/apps → Create app → Type: **script** → Name: LaunchRadar → Redirect URI: `http://localhost:3000` → copy client_id + secret → add to `.env.local`
+
+> ⚠️ **Reddit API note**: Reddit locked down API access in late 2025. New developers cannot self-serve credentials. **Workaround**: Use Reddit's public `.json` endpoints — no auth needed, works fine for MVP. No need for `REDDIT_CLIENT_ID` or `REDDIT_CLIENT_SECRET`.
 
 ---
 
-**CC Prompt 3A — Reddit client:**
+**CC Prompt 3A — Reddit client (public .json API, no auth):**
 
 ```
 Create lib/reddit.ts for LaunchRadar.
 
-This fetches new posts from Reddit subreddits using the official Reddit API
-with Client Credentials flow (no user login, just reading public posts).
+This fetches new posts from Reddit subreddits using Reddit's PUBLIC .json API.
+No OAuth, no API keys needed — Reddit allows unauthenticated reads from public .json endpoints.
 
 Install if needed: @upstash/redis
 
-Export these two functions:
+Export:
+fetchSubredditPosts(subreddit: string): Promise<RedditPost[]>
 
-1. getRedditAccessToken(): Promise<string>
-   - POST to https://www.reddit.com/api/v1/access_token
-   - Use basic auth with REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET
-   - Body: grant_type=client_credentials
-   - Cache the token in Upstash Redis with key "reddit_access_token" and 55 minute TTL
-   - If cached token exists, return it without calling the API again
-   - Upstash credentials: UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN
-
-2. fetchSubredditPosts(subreddit: string, accessToken: string): Promise<RedditPost[]>
-   - GET https://oauth.reddit.com/r/{subreddit}/new?limit=100
-   - Headers: Authorization: "Bearer {token}", User-Agent: process.env.REDDIT_USER_AGENT
-   - Filter out: posts older than 24 hours, stickied posts, posts with empty selftext
-   - Return typed array
+Logic:
+- GET https://www.reddit.com/r/{subreddit}/new.json?limit=100
+- Headers: User-Agent: "LaunchRadar/1.0"
+- Rate limit: 10 requests/minute — add 100ms delay between calls if needed
+- Filter out: posts older than 24 hours, stickied posts, [removed] and [deleted] body text
+- Return typed array
 
 Export this interface:
 interface RedditPost {
@@ -398,45 +404,58 @@ interface HNStory {
 
 ---
 
-**CC Prompt 3C — Cron: fetch-posts (with placeholder scorer):**
+**CC Prompt 3C — Cron: fetch-posts:**
 
 ```
 Create app/api/cron/fetch-posts/route.ts for LaunchRadar.
 
-This runs every 30 minutes triggered by Vercel Cron.
+This runs daily triggered by Vercel Cron (Hobby plan only supports daily crons).
 
 Logic:
 1. Verify: check Authorization header equals "Bearer " + process.env.CRON_SECRET
    Return 401 if wrong.
 
 2. Get all Profiles from DB using Prisma (select id, keywords, subreddits fields only).
+   Log: [cron] Loaded {N} profile(s). Unique subreddits: [...]
 
 3. Collect all unique subreddits across all profiles.
 
-4. Fetch posts from each subreddit using getRedditAccessToken() and fetchSubredditPosts()
-   from lib/reddit.ts. Wrap each in try/catch so one failure doesn't stop others.
+4. Fetch posts from each subreddit using fetchSubredditPosts() from lib/reddit.ts.
+   Log: [cron] r/{subreddit}: fetched {N} post(s)
+   Wrap each in try/catch so one failure doesn't stop others.
 
 5. Fetch HN stories using fetchHNStories(150) from lib/hn.ts.
+   Log: [cron] HN: fetched {N} story(ies)
 
 6. For each profile:
-   a. Filter posts where title or body contains any of the profile's keywords
-      (case-insensitive, partial match is fine)
-   b. For now, save each matching post to Opportunity table using Prisma createMany
-      with skipDuplicates: true (@@unique([profileId, externalId]) handles deduplication)
-   c. Use placeholder scoring: relevanceScore: 50, intentLevel: "medium", 
-      reasoning: "pending scoring", suggestedReplies: []
+   a. Filter posts where title or body contains any keyword from the profile's keywords array.
+      IMPORTANT keyword matching fix: split each keyword phrase into individual words,
+      match if ANY word with length > 4 chars appears in the post title or body (case-insensitive).
+      Example: "struggling to find first customers" should match posts containing "struggling",
+      "customers", "finding" etc. — NOT require the full phrase to match exactly.
+   b. Log: [cron] Profile {id} — candidates: {total}, keyword-matched: {N}
+   c. IMPORTANT: Limit to max 30 most recent matched posts before scoring (prevents timeout)
+   d. Call scorePosts() from lib/scorer.ts (see Phase 4)
+   e. Save only posts with relevanceScore >= 40 to Opportunity table using Prisma createMany
+      with skipDuplicates: true (@@unique([userId, externalId]) handles deduplication)
 
-7. Return Response with JSON: { success: true, profilesProcessed: N, opportunitiesSaved: N }
+7. Log: [cron] Done — totalOpportunitiesSaved: {N}
+8. Return: { success: true, profilesProcessed: N, opportunitiesSaved: N }
 
 Use prisma from lib/db/client.ts.
-Log errors to console.
 ```
 
-**Test after Phase 3**: Generate CRON_SECRET with `openssl rand -base64 32`, add to `.env.local`. Then manually call: `curl -H "Authorization: Bearer YOUR_CRON_SECRET" http://localhost:3000/api/cron/fetch-posts`. Check Supabase table for saved Opportunity rows.
+**Test after Phase 3**: Generate CRON_SECRET with `openssl rand -base64 32`, add to `.env.local`. Then manually call:
+```bash
+curl -H "Authorization: Bearer YOUR_CRON_SECRET" http://localhost:3000/api/cron/fetch-posts
+```
+Should return `{"success":true,"profilesProcessed":1,"opportunitiesSaved":N}` where N > 0.
+
+> ⚠️ **Vercel Hobby cron note**: Hobby plan only runs crons once daily (not every 30 min). Set schedule to `"0 1 * * *"` (1am UTC). Upgrade to Pro for higher frequency.
 
 ---
 
-### Phase 4: AI Scoring
+### Phase 4: AI Scoring ✅ DONE
 
 **Goal**: Replace placeholder scorer with real GPT-4o-mini scoring.
 
@@ -474,7 +493,7 @@ interface ScoredPost extends PostToScore {
 
 Implementation:
 - Use openai package, model: gpt-4o-mini
-- Process posts in batches of 20
+- Process posts in batches of 10 (NOT 20 — smaller batches prevent timeout)
 - Use response_format: { type: "json_object" }
 - Calculate ageHours for each post
 
@@ -497,15 +516,14 @@ Posts:
 
 Return JSON: { \"results\": [ { \"externalId\": \"...\", \"score\": 0-100, \"intentLevel\": \"high|medium|low\", \"reasoning\": \"one sentence max\" } ] }"
 
-Also update app/api/cron/fetch-posts/route.ts:
-- After filtering posts for a profile, call scorePosts() before saving
-- Only save posts with relevanceScore >= 40 (filter noise early)
-- Save the real score, intentLevel, and reasoning to each Opportunity row
+In app/api/cron/fetch-posts/route.ts:
+- After keyword matching, take the 30 most recent posts (to prevent OpenAI timeout)
+- Call scorePosts() and only save posts with relevanceScore >= 40
 ```
 
 ---
 
-### Phase 5: Onboarding Flow
+### Phase 5: Onboarding Flow ✅ DONE
 
 **Goal**: New users describe their product and get AI-generated keywords in 10 minutes.
 
@@ -558,7 +576,7 @@ If step === "generate-keywords":
 If step === "save":
   Body also has: { productDescription, targetCustomer, keywords: string[], subreddits: string[] }
   - Get current user from Supabase session
-  - Update Profile in DB via Prisma:
+  - UPSERT (not update) Profile in DB via Prisma — use upsert in case Profile row is missing:
     productDescription, targetCustomer, keywords, subreddits, onboardingComplete: true
   - Return: { success: true }
 
@@ -605,64 +623,19 @@ Use Shadcn: Card, Button, Textarea, Badge, Input.
 
 ---
 
-### Phase 6: Daily Digest Email
+### Phase 6: Daily Digest Email ✅ DONE
 
-**Goal**: Users receive a curated email every morning with 3-5 opportunities.
+**Goal**: Users receive a curated email every morning with opportunities.
 
-**Before starting**: Set up Resend at resend.com → create account → get API key → add to `.env.local`.
-
----
-
-**CC Prompt 6A — Reply generator:**
-
-```
-Create lib/reply-generator.ts for LaunchRadar.
-
-Export:
-generateReplies(
-  post: { title: string, body: string, subreddit: string | null },
-  profile: { productDescription: string, targetCustomer: string }
-): Promise<ReplyVariation[]>
-
-interface ReplyVariation {
-  approach: "helpful" | "educational" | "question"
-  label: string
-  text: string
-  pros: string
-  cons: string
-}
-
-Use gpt-4o with response_format: { type: "json_object" }
-
-Use this prompt:
-"Generate 3 reply approaches for a founder responding to this Reddit/HN post.
-
-Product: {productDescription}
-Target customer: {targetCustomer}
-Post title: {title}
-Post body (first 600 chars): {body}
-Subreddit: {subreddit || 'Hacker News'}
-
-Approach 1 - helpful: Offer genuine value first, mention the product naturally only if it fits
-Approach 2 - educational: Answer the question helpfully with no product mention (build rapport)
-Approach 3 - question: Ask a clarifying question to understand their needs better
-
-Rules for all replies:
-- Sound like a real Reddit comment, not marketing copy
-- 2-4 sentences max
-- No exclamation points, no emojis, casual tone
-- Never start with 'Great question!'
-
-Return JSON: { \"replies\": [ { \"approach\": \"helpful|educational|question\", \"label\": \"short label\", \"text\": \"the reply\", \"pros\": \"one sentence\", \"cons\": \"one sentence\" } ] }"
-```
+**Before starting**: Set up Resend at resend.com → create account → get API key → add to `.env.local`. Use `onboarding@resend.dev` as FROM email for testing (no domain verification needed).
 
 ---
 
-**CC Prompt 6B — Digest email template:**
+**CC Prompt 6A — Digest email template:**
 
 ```
 Create lib/email-templates/digest.tsx for LaunchRadar using React Email.
-I have react-email and @react-email/components installed.
+Install if needed: react-email @react-email/components resend
 
 Props interface:
 interface DigestEmailProps {
@@ -676,35 +649,27 @@ interface DigestEmailProps {
     reasoning: string
     postedAt: Date
     commentCount: number
-    firstReplyText: string
   }>
-  stats: {
-    opportunitiesFound: number
-    repliesMade: number
-    conversions: number
-  }
   baseUrl: string
 }
 
 Design — clean, minimal, Gmail-compatible:
 - Header: "LaunchRadar" in dark text, thin gray border below
 - For each opportunity:
-  - Intent line: "🔥🔥🔥 HIGH INTENT" or "🔥🔥 MEDIUM INTENT"
+  - Intent badge: "🔥🔥🔥 HIGH INTENT" or "🔥🔥 MEDIUM INTENT" or "🔥 LOW INTENT"
   - Title as bold link to the Reddit/HN URL
-  - Source: "r/{subreddit}" or "Hacker News" · {N} hours ago · {N} comments
+  - Source: "r/{subreddit}" or "Hacker News" · {N} comments
   - "Why relevant:" + reasoning in gray italic
-  - Gray box with firstReplyText truncated at 200 chars
   - Two links: "View Thread →" and "Mark as Replied ✓"
-    Mark as Replied links to: {baseUrl}/api/track/replied?id={opportunity.id}
   - Divider between opportunities
-- Footer: stats + "Manage email preferences" link to {baseUrl}/settings
+- Footer: "Manage email preferences" link to {baseUrl}/settings
 
 Export default DigestEmail component.
 ```
 
 ---
 
-**CC Prompt 6C — Digest logic + send-digests cron:**
+**CC Prompt 6B — Digest logic + send-digests cron:**
 
 ```
 Create two files for LaunchRadar:
@@ -716,19 +681,18 @@ Logic:
 - Query Opportunity table for this profile where:
   relevanceScore > 70 AND dismissed = false AND includedInDigest = false
   AND postedAt > new Date(Date.now() - 12 * 60 * 60 * 1000)
-  ORDER BY intentLevel (high first), then relevanceScore DESC
+  ORDER BY relevanceScore DESC
   LIMIT 5
+  Note: sort in memory by intentLevel (high → medium → low) after fetching,
+  since Prisma sorts "high|low|medium" alphabetically which is wrong order.
 - If 0 opportunities: return { sent: false, count: 0 }
-- For each opportunity: call generateReplies() from lib/reply-generator.ts
-  Update Opportunity.suggestedReplies in DB
 - Get profile email from DB
 - Send via Resend:
   from: process.env.RESEND_FROM_EMAIL
   to: profile email
   subject: "🎯 {N} opportunit{y/ies} to find customers today"
-  react: <DigestEmail opportunities={...} stats={...} baseUrl={process.env.NEXTAUTH_URL} />
+  react: <DigestEmail opportunities={...} baseUrl={process.env.NEXT_PUBLIC_APP_URL} />
 - Mark all included opportunities: includedInDigest = true
-- Increment profile.opportunitiesFound += N
 - Return { sent: true, count: N }
 
 2. app/api/cron/send-digests/route.ts
@@ -742,13 +706,17 @@ Logic:
 Use Resend package and Prisma from lib/db/client.ts.
 ```
 
-**Test after Phase 6**: Manually call `curl -H "Authorization: Bearer YOUR_CRON_SECRET" http://localhost:3000/api/cron/send-digests`. Check your inbox.
+**Test after Phase 6**: Manually call:
+```bash
+curl -H "Authorization: Bearer YOUR_CRON_SECRET" http://localhost:3000/api/cron/send-digests
+```
+Check your inbox for the digest email.
 
 ---
 
-### Phase 7: Dashboard
+### Phase 7: Dashboard ✅ DONE
 
-**Goal**: Users can see opportunities and generate replies.
+**Goal**: Users can see opportunities and interact with them.
 
 ---
 
@@ -759,57 +727,51 @@ Create the dashboard for LaunchRadar.
 
 1. app/dashboard/page.tsx (server component)
 - Get Supabase session. If no user: redirect to /auth/login.
-- Fetch Profile from DB (stats, subscriptionStatus, trialEndsAt, onboardingComplete)
+- Fetch Profile from DB (subscriptionStatus, trialEndsAt, onboardingComplete)
 - If !onboardingComplete: redirect to /onboarding
-- Fetch Opportunities: ORDER BY createdAt DESC, LIMIT 50
-- Pass data to client components
-- Banners (shown above content):
-  If subscriptionStatus = "trialing":
-    Yellow banner: "Free trial — {X} days remaining · [Upgrade Now]"
-  If trial expired and status != "active":
-    Red banner: "Your trial has ended · [Upgrade Now]"
-  If URL has ?upgraded=true query param:
-    Green banner: "🎉 Welcome to LaunchRadar Pro!"
+- Fetch Opportunities (dismissed: false) ORDER BY createdAt DESC, LIMIT 50
+- Count queries for stats:
+  totalFound = count all opportunities for this user
+  totalReplied = count where replied = true
+  totalSkipped = count where dismissed = true
+- Pass data to DashboardClient component
+- Banners:
+  If subscriptionStatus = "trialing": yellow banner "Free trial — {X} days remaining · [Upgrade Now]"
+  If trial expired and status != "active": red banner "Your trial has ended · [Upgrade Now]"
+  If URL has ?upgraded=true: green banner "🎉 Welcome to LaunchRadar Pro!"
 
 2. components/StatsBar.tsx
-- Three stats: "Found: {N}" | "Replied: {N}" | "Won: {N}"
+- Three stats: "Found: {totalFound}" | "Replied: {totalReplied}" | "Skipped: {totalSkipped}"
+- Initialize from server-passed values (not 0) so stats survive page refresh
 
 3. components/OpportunityCard.tsx (client component)
-Props: opportunity + onReplied callback + onDismissed callback
-
-Shows:
 - Intent badge: "🔥🔥🔥 HIGH" (red) | "🔥🔥 MEDIUM" (orange) | "🔥 LOW" (yellow)
 - "r/{subreddit}" or "Hacker News" · {N} hours ago · {N} comments
 - Title (2-line clamp)
 - "Why relevant: {reasoning}" in gray
-- Three buttons:
-  [View + Reply] → opens ReplyModal
-  [Replied ✓] → POST /api/opportunities/{id}/reply → calls onReplied → button turns green
-  [Skip ✗] → inline dropdown with reasons:
-    "Wrong audience" | "Too broad" | "Too many comments" | "Job posting" | "Other"
-    On select: POST /api/feedback {opportunityId, isRelevant: false, reason}
-    Then calls onDismissed → card fades out with animation
+- Buttons:
+  [View Thread] → opens ReplyModal
+  [Replied ✓] → POST /api/opportunities/{id}/reply → button turns green
+  [Skip ✗] → POST /api/feedback {opportunityId, isRelevant: false} → card fades out
 
-Filter tabs above cards: All | High | Medium | Low (client-side filter, no refetch)
+Filter tabs: All | 🔥🔥🔥 High | 🔥🔥 Medium | 🔥 Low (client-side)
 Empty state: "No opportunities yet. Your first digest arrives tomorrow morning."
 
-Use Shadcn: Card, Badge, Button, DropdownMenu.
+Use Shadcn: Card, Badge, Button.
 ```
 
 ---
 
-**CC Prompt 7B — Reply modal:**
+**CC Prompt 7B — Reply modal (simplified):**
 
 ```
 Create components/ReplyModal.tsx for LaunchRadar.
 
 Props:
-- opportunity: { id, title, body, url, subreddit, platform, suggestedReplies: ReplyVariation[] }
+- opportunity: { id, title, body, url, subreddit, platform }
 - isOpen: boolean
 - onClose: () => void
 - onReplied: () => void
-
-ReplyVariation: { approach: string, label: string, text: string, pros: string, cons: string }
 
 Modal layout using Shadcn Dialog:
 
@@ -818,18 +780,11 @@ Section 1 — Post context:
 - Body text in gray (max 5 lines, "Show more" toggle if longer)
 - "Open original thread →" link (opens new tab)
 
-Section 2 — Choose approach:
-- 3 radio options (one per approach, show label)
-- Below selected: "✓ {pros}" and "⚠ {cons}" in small gray text
+Bottom button:
+- [Mark as Replied ✓] → POST /api/opportunities/{id}/reply → close modal → call onReplied()
 
-Section 3 — Your reply:
-- Textarea pre-filled with selected approach's text, user can edit
-- Character count below (e.g. "143 chars")
-
-Buttons at bottom:
-- [Copy Reply] → copies to clipboard → changes to "Copied! ✓" for 2 seconds
-- [Open Reddit / HN] → window.open(opportunity.url, '_blank')
-- [Mark as Replied] → POST /api/opportunities/{id}/reply → close modal → call onReplied()
+Note: No AI reply generation in modal. The modal just shows the post and lets users
+mark it replied after they've gone to Reddit/HN to reply manually.
 ```
 
 ---
@@ -837,37 +792,58 @@ Buttons at bottom:
 **CC Prompt 7C — API routes for dashboard actions:**
 
 ```
-Create three API routes for LaunchRadar:
+Create two API routes for LaunchRadar:
 
 1. app/api/opportunities/[id]/reply/route.ts (POST)
-- Get user from Supabase session
-- Verify opportunity belongs to this user's profile
-- Update: Opportunity.replied = true, Opportunity.repliedAt = new Date()
-- Increment Profile.repliesMade by 1
+- Get user from Supabase session → 401 if not authenticated
+- Update Opportunity: replied = true, repliedAt = new Date()
+  Use updateMany with { id, userId: user.id } so users can only update their own records
 - Return: { success: true }
 
 2. app/api/feedback/route.ts (POST)
 - Body: { opportunityId: string, isRelevant: boolean, reason?: string }
-- Get user from Supabase session
-- Verify opportunity belongs to this user
-- Upsert Feedback row
-- If isRelevant === false: also set Opportunity.dismissed = true
+- Get user from Supabase session → 401 if not authenticated
+- Run two writes in parallel:
+  - updateMany Opportunity: dismissed = true (where id = opportunityId AND userId = user.id)
+  - upsert Feedback row (handles re-dismiss gracefully)
 - Return: { success: true }
 
-3. app/api/track/replied/route.ts (GET)
-- Query param: id (opportunityId)
-- This is the email link — no auth needed
-- Update Opportunity.replied = true
-- Redirect to /dashboard
+IMPORTANT: These routes are critical — without them, all "Mark as Replied" and "Skip"
+clicks hit 404 and changes are lost on page refresh.
 ```
 
 ---
 
-### Phase 8: Stripe Payments
+**CC Prompt 7D — Header with navigation:**
 
-**Goal**: $29/mo subscription, same pattern as ai-video-assistant.
+```
+Create components/Header.tsx for LaunchRadar (client component).
 
-**Before starting**: dashboard.stripe.com → Products → Add product → Name: "LaunchRadar Pro" → Price: $29/mo recurring → copy Price ID to `.env.local`.
+Layout:
+- Left: "LaunchRadar" text logo (link to /dashboard)
+- Center: navigation links — "Dashboard" → /dashboard, "Settings" → /settings
+- Right: user email + [Log out] button
+
+Log out: call supabase.auth.signOut() from createBrowserClient(@supabase/ssr),
+then redirect to /
+
+Import Header in app/dashboard/page.tsx and app/settings/page.tsx.
+```
+
+---
+
+### Phase 8: Stripe Payments ✅ DONE
+
+**Goal**: $19/mo subscription.
+
+**Before starting**:
+- Stripe Dashboard → Test mode → Products → Add product → "LaunchRadar Pro" → $19.00/mo recurring → copy Price ID
+- Developers → API Keys → copy Secret key
+- Add to `.env.local` and Vercel:
+  - `STRIPE_SECRET_KEY=sk_test_...`
+  - `STRIPE_PRICE_ID=price_...`
+
+> **Note**: Only `STRIPE_SECRET_KEY` and `STRIPE_PRICE_ID` are needed. We use Stripe-hosted Checkout so no publishable key is required.
 
 ---
 
@@ -875,77 +851,73 @@ Create three API routes for LaunchRadar:
 
 ```
 Add Stripe subscription payment to LaunchRadar.
-I have the stripe npm package installed.
+Install if needed: stripe
 
-Create app/api/stripe/checkout/route.ts (POST):
-- Get user from Supabase session + Profile from DB
+1. Create app/api/stripe/checkout/route.ts (POST):
+- Get user from Supabase session + Profile email from Prisma
 - Create Stripe Checkout Session:
   mode: "subscription"
   line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }]
-  If profile.stripeCustomerId exists: customer: profile.stripeCustomerId
-  Else: customer_email: profile.email
-  success_url: process.env.NEXTAUTH_URL + "/dashboard?upgraded=true"
-  cancel_url: process.env.NEXTAUTH_URL + "/dashboard"
+  customer_email: profile.email
+  success_url: process.env.NEXT_PUBLIC_APP_URL + "/dashboard?upgraded=true"
+  cancel_url: process.env.NEXT_PUBLIC_APP_URL + "/dashboard"
   metadata: { profileId: profile.id }
 - Return: { url: session.url }
 
-Create app/api/stripe/webhook/route.ts (POST):
+2. Create app/api/stripe/webhook/route.ts (POST):
 - Get raw body using request.text() — NOT request.json() (required for signature verification)
 - Verify Stripe signature using STRIPE_WEBHOOK_SECRET
-- Handle:
-
-  checkout.session.completed:
+- Handle checkout.session.completed:
   → Find Profile by metadata.profileId
-  → Update: stripeCustomerId = session.customer
-
-  customer.subscription.updated:
-  → Find Profile by stripeCustomerId
-  → Update: subscriptionStatus = subscription.status,
-    currentPeriodEnd = new Date(subscription.current_period_end * 1000)
-
-  customer.subscription.deleted:
-  → Find Profile by stripeCustomerId
-  → Update: subscriptionStatus = "canceled"
-
-- Return 200 for all handled events.
+  → Update: subscriptionStatus = "active"
+- Return 200
 
 Use prisma from lib/db/client.ts.
 ```
 
 ---
 
-**CC Prompt 8B — Buy modal + upgrade banners:**
+**CC Prompt 8B — BuyModal + wire up Upgrade buttons:**
 
 ```
-Add payment UI to LaunchRadar.
+Create components/BuyModal.tsx (client component, Shadcn Dialog):
 
-1. Create components/BuyModal.tsx (client component)
 Props: isOpen, onClose
 
 Content:
-- Title: "LaunchRadar Pro"
-- Price: "$29 / month"
-- Features:
-  ✓ Daily digest of 3-5 high-intent opportunities
-  ✓ AI-powered relevance filtering
-  ✓ 3 reply suggestions per opportunity
-  ✓ Reddit + Hacker News monitoring
+- Title: "LaunchRadar Pro — $19 / month"
+- Features list:
+  ✓ Daily digest of high-intent opportunities
+  ✓ AI relevance filtering
+  ✓ Reddit + HN monitoring
   ✓ Cancel anytime
 - [Start Subscription] button:
   POST /api/stripe/checkout → get { url } → window.location.href = url
-  Show loading spinner while waiting.
+  Show loading state while waiting
 - [Maybe later] text link → onClose()
 
-2. Update app/dashboard/page.tsx:
-- Import BuyModal, wire up [Upgrade Now] buttons in the trial/expired banners to open it
-- Days remaining calculation: Math.ceil((trialEndsAt.getTime() - Date.now()) / 86400000)
-
-Use Shadcn Dialog.
+Wire up in:
+- app/dashboard/page.tsx: [Upgrade Now] button in trial/expired banners → open BuyModal
+- app/settings/page.tsx (SettingsClient): [Upgrade to Pro] button → open BuyModal
+  (not a placeholder — must call real /api/stripe/checkout)
 ```
+
+**Test Stripe locally**:
+```bash
+brew install stripe/stripe-cli/stripe
+stripe login
+stripe listen --forward-to localhost:3000/api/stripe/webhook
+```
+The CLI gives you a temporary `STRIPE_WEBHOOK_SECRET` — add to `.env.local` for local testing.
+
+Test payment: card `4242 4242 4242 4242`, any future date, any 3-digit CVV.
+
+**Configure production webhook**:
+Stripe Dashboard → Developers → Webhooks → Add endpoint → URL: `https://launchradar-five.vercel.app/api/stripe/webhook` → select `checkout.session.completed` → copy signing secret → add to Vercel Environment Variables as `STRIPE_WEBHOOK_SECRET`.
 
 ---
 
-### Phase 9: Settings + Polish
+### Phase 9: Settings + Polish ✅ DONE
 
 ---
 
@@ -954,7 +926,7 @@ Use Shadcn Dialog.
 ```
 Create app/settings/page.tsx for LaunchRadar.
 
-Fetch current profile data server-side. Pass to client form sections.
+Fetch current profile data server-side. Pass to SettingsClient component.
 
 4 sections:
 
@@ -973,27 +945,17 @@ Fetch current profile data server-side. Pass to client form sections.
 
 3. Email Preferences
 - Toggle: "Daily digest emails" (emailEnabled)
-- Select time: "6 AM UTC" | "8 AM UTC" | "12 PM UTC" | "6 PM UTC" (maps to digestTime: 6|8|12|18)
-- [Save] → PATCH /api/settings {emailEnabled, digestTime}
+- Delivery time fixed at "8:00 UTC"
+- [Save] → PATCH /api/settings {emailEnabled}
 
 4. Subscription
-- Status badge: "Active" (green) | "Trial (X days left)" (yellow) | "Canceled" (red)
-- If active: "Renews {currentPeriodEnd}"
-- [Manage Subscription] → POST /api/stripe/portal → redirect to Stripe portal
-- [Upgrade] if trialing/canceled → opens BuyModal
-
-Create app/api/stripe/portal/route.ts (POST):
-- Get user + profile from Supabase session
-- Create Stripe billing portal session:
-  customer: profile.stripeCustomerId
-  return_url: process.env.NEXTAUTH_URL + "/settings"
-- Return: { url: portalSession.url }
+- Status badge: "Trial — X days left" (yellow) | "Active" (green) | "Canceled" (red)
+- [Upgrade to Pro] if trialing → opens BuyModal (must use real Stripe checkout)
 
 Create app/api/settings/route.ts (PATCH):
 - Get user from Supabase session
-- Accept any subset of: { productDescription, targetCustomer, keywords,
-  subreddits, emailEnabled, digestTime }
-- Update Profile in DB
+- Accept any subset of: { productDescription, targetCustomer, keywords, subreddits, emailEnabled }
+- Update Profile in DB with Prisma
 - Return: { success: true }
 ```
 
@@ -1002,56 +964,30 @@ Create app/api/settings/route.ts (PATCH):
 **CC Prompt 9B — Final polish + landing page:**
 
 ```
-Final polish for LaunchRadar before launch.
+Final polish for LaunchRadar.
 
-1. Create vercel.json in project root:
-{
-  "crons": [
-    { "path": "/api/cron/fetch-posts", "schedule": "*/30 * * * *" },
-    { "path": "/api/cron/send-digests", "schedule": "0 8 * * *" }
-  ]
-}
+1. Update app/layout.tsx:
+- title: "LaunchRadar — Find your first customers on Reddit & HN"
+- description: "Stop scrolling Reddit for hours. Get a daily digest of discussions where people need your product."
+- Add og:title, og:description, og:type="website"
 
-2. Update app/layout.tsx:
-title: "LaunchRadar — Find your first customers on Reddit & HN"
-description: "Stop scrolling Reddit for hours. Get a daily digest of 3-5 discussions where people need your product."
-Add og:title, og:description, og:type="website"
+2. Create app/not-found.tsx:
+- Simple 404 page with "Page not found" and link back to /dashboard
 
-3. Create app/not-found.tsx:
-Simple 404 page with "Page not found" and link to /dashboard.
+3. Create app/privacy/page.tsx and app/terms/page.tsx:
+- Simple placeholder text pages
 
-4. Create app/privacy/page.tsx and app/terms/page.tsx:
-Placeholder text pages. Link both in landing page footer.
-
-5. Build app/page.tsx (landing page):
-Server component — if user already logged in, redirect to /dashboard.
-
-Content:
-- Hero:
-  H1: "Stop scrolling Reddit for hours. Find customers in 15 minutes."
-  Subheading: "LaunchRadar monitors Reddit & HN and sends you 3-5 high-intent leads daily — with suggested replies."
-  CTA: [Start Free Trial →] → /auth/register
-  Note: "7-day free trial · No credit card required"
-
-- How it works (3 steps):
-  1. Describe your product (2 min setup)
-  2. AI monitors Reddit + HN (fully automated)
-  3. Get a daily digest of who to talk to
-
-- Pricing:
-  $29 / month
-  7-day free trial · Cancel anytime
-  [Start Free Trial →]
-
+4. Update app/page.tsx (landing page):
+- Server component: if user already logged in, redirect to /dashboard
+- Hero: "Stop scrolling Reddit for hours. Find customers in 15 minutes."
+- How it works (3 steps): Describe product → AI monitors Reddit + HN → Get daily digest
+- Pricing: $19/month, 7-day free trial, Cancel anytime
 - FAQ:
   Q: How is this different from F5Bot?
-  A: F5Bot sends 100+ alerts per day. LaunchRadar uses AI to filter down to 3-5 high-intent discussions.
+  A: F5Bot sends 100+ alerts. LaunchRadar uses AI to filter to the highest-intent discussions.
   Q: Will I get banned from Reddit?
   A: No. We find threads for you — you reply manually in your own voice.
-  Q: What products work best?
-  A: B2B SaaS, tools, and services for indie hackers and developers.
-
-- Footer: Privacy · Terms · Made by [your name]
+- Footer: Privacy · Terms
 ```
 
 ---
@@ -1059,21 +995,21 @@ Content:
 ### Phase 10: Launch Prep
 
 ```
-□ Run: openssl rand -base64 32 → add result to .env.local as CRON_SECRET
-□ npm run build — fix all TypeScript errors before deploying
-□ Switch Stripe to live mode in dashboard.stripe.com
-□ Add all .env.local vars to Vercel dashboard
-□ Set Vercel build command: npx prisma generate && next build
-□ Deploy and do full end-to-end test on production URL:
-    Register → onboarding → manually curl fetch-posts → manually curl send-digests
-    → verify email arrives → test Stripe payment
+□ npm run build — fix all TypeScript errors
+□ Verify all env vars in Vercel dashboard
+□ Test full flow on production: Register → onboarding → manually curl fetch-posts
+  → check dashboard shows opportunities → test Stripe payment → verify subscriptionStatus = "active"
+□ Switch Stripe to live mode:
+  - Create new product in Stripe Live mode → new STRIPE_PRICE_ID
+  - Copy live STRIPE_SECRET_KEY
+  - Update these in Vercel Environment Variables
+  - Configure new production webhook in Stripe Live mode → new STRIPE_WEBHOOK_SECRET
 □ Verify cron jobs: Vercel dashboard → Functions → Cron
 □ Record Loom demo (90 seconds):
     0-30s: onboarding wizard
-    30-60s: digest email
-    60-90s: dashboard + reply modal
+    30-60s: dashboard with opportunities
+    60-90s: viewing a thread + marking replied
 □ Write Product Hunt page
-□ Write Indie Hackers "Show IH" post
 □ Write r/SideProject post (personal story angle)
 □ Ask 5 beta users to upvote on launch day
 ```
@@ -1084,11 +1020,11 @@ Content:
 
 **Build command**: `npx prisma generate && next build`
 
-**vercel.json** (create in root):
+**vercel.json** (Hobby plan — daily only):
 ```json
 {
   "crons": [
-    { "path": "/api/cron/fetch-posts", "schedule": "*/30 * * * *" },
+    { "path": "/api/cron/fetch-posts", "schedule": "0 1 * * *" },
     { "path": "/api/cron/send-digests", "schedule": "0 8 * * *" }
   ]
 }
@@ -1097,7 +1033,7 @@ Content:
 **Cron security** — all cron routes check:
 ```typescript
 if (request.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
-  return new Response("Unauthorized", { status: 401 });
+  return new Response("Unauthorized", { status: 401 })
 }
 ```
 
@@ -1107,30 +1043,50 @@ if (request.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`
 
 | Service | Free Tier | Upgrade When |
 |---------|-----------|--------------|
-| Vercel | Hobby (crons included) | ~500 users |
+| Vercel | Hobby (daily crons) | Pro ($20/mo) for 30-min crons |
 | Supabase | 500MB, 50K MAU | $25/mo at scale |
 | Upstash Redis | 10K req/day | $10/mo at ~200 users |
 | Resend | 3K emails/mo | $20/mo at ~100 users |
-| OpenAI | Pay per use | ~$25/mo at 100 users |
+| OpenAI | Pay per use | ~$10-25/mo at 100 users |
 | Stripe | 2.9% + $0.30/tx | No fixed cost |
 
-**Break-even: 7 paying users**
+**Break-even: ~6 paying users at $19/mo**
 
 ---
 
-## 🐛 Known Gotchas
+## 🐛 Known Gotchas & Fixes
 
-**Supabase**: Use `createBrowserClient` from `@supabase/ssr` in client components. Use `supabaseAdmin` with service role key in API routes (bypasses RLS).
+**Prisma v7 on Vercel**: Must use `@prisma/adapter-pg` — Prisma v7 no longer accepts empty constructor. Pattern:
+```typescript
+import { PrismaPg } from '@prisma/adapter-pg'
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL!,
+  ssl: { rejectUnauthorized: false },
+})
+export const prisma = new PrismaClient({ adapter })
+```
 
-**Reddit API**: Token expires 1hr → cache in Upstash Redis with 55min TTL. Use `oauth.reddit.com` after auth (not `www.reddit.com`). User-Agent header required or you get 429s.
+**Supabase connection from Vercel (P1001 error)**: Use the **Transaction Pooler URL (port 6543)**, NOT the direct connection (port 5432). Direct connections time out on serverless. Get pooler URL from: Supabase Dashboard → Connect button → Transaction pooler tab. Use this URL in both local `.env.local` AND Vercel.
 
-**HN API**: Only fetch newest 100-200 IDs. Items can return null (deleted) → handle gracefully.
+**Reddit API locked down (Nov 2025)**: New developers can't get API credentials. Use public `.json` endpoints instead: `https://www.reddit.com/r/{subreddit}/new.json?limit=100`. No auth required. 10 req/min limit — sufficient for MVP.
 
-**OpenAI**: Always include the word "json" in prompt when using `response_format: { type: "json_object" }`. GPT-4o-mini for scoring, GPT-4o for reply generation.
+**Keyword matching**: Don't match full phrases — they never appear verbatim in posts. Split each keyword into individual words and match if ANY significant word (length > 4) appears in the post title/body.
 
-**Prisma on Vercel**: `DATABASE_URL` needs `?pgbouncer=true&connection_limit=1`. Build command must include `npx prisma generate`.
+**Cron timeout with too many posts**: 288 matched posts → 15+ OpenAI calls → timeout. Limit to 30 posts per profile before scoring. Use batch size of 10 (not 20) in scorer.ts.
+
+**Stats reset on refresh**: Dashboard stats must be initialized from server-side DB counts, not from 0. Use `useState(serverValue)` not `useState(0)`.
+
+**API routes missing = silent failures**: `/api/opportunities/[id]/reply` and `/api/feedback` must exist. Without them, all card actions hit 404, errors are swallowed by try/catch, and changes are lost on refresh.
+
+**Supabase Profile upsert**: Use `upsert` not `update` in onboarding save. If Profile row doesn't exist (registration edge case), `update` throws P2025.
 
 **Stripe webhook**: Use `request.text()` not `request.json()` before signature verification.
+
+**Email confirmation**: Supabase enables email confirmation by default. For development: Authentication → Providers → Email → disable "Confirm email".
+
+**intentLevel sort**: Prisma sorts "high|low|medium" alphabetically (h→l→m). Sort in memory after fetching: high → medium → low.
+
+**Supabase RLS**: LaunchRadar uses Prisma + service role key (server-side only), so RLS is not required for security. All tables are UNRESTRICTED — this is fine for MVP since the client never has direct DB access.
 
 ---
 
@@ -1139,5 +1095,6 @@ if (request.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`
 | Date | Version | Changes |
 |------|---------|---------|
 | 2026-02-17 | 1.0 | Initial guide |
-| 2026-02-22 | 1.1 | Switched to Supabase Auth. Removed NextAuth. User → Profile. |
-| 2026-02-22 | 1.2 | Embedded CC prompts directly into each phase. |
+| 2026-02-22 | 1.1 | Switched to Supabase Auth. Removed NextAuth. |
+| 2026-02-22 | 1.2 | Embedded CC prompts into each phase. |
+| 2026-02-24 | 2.0 | Major update: price $29→$19, Prisma v7 adapter fix, Supabase pooler URL, Reddit public API, keyword matching fix, cron timeout fix, simplified reply modal (no AI generation), stats fix, missing API routes added, Stripe simplified (no publishable key needed), all phases 1-9 marked complete |
