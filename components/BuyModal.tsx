@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { Loader2 } from 'lucide-react'
 
 interface BuyModalProps {
   isOpen: boolean
@@ -57,7 +58,14 @@ export default function BuyModal({ isOpen, onClose }: BuyModalProps) {
 
         <div className="flex flex-col gap-3">
           <Button onClick={handleSubscribe} disabled={isLoading}>
-            {isLoading ? 'Redirecting…' : 'Start Subscription'}
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Redirecting…
+              </>
+            ) : (
+              'Start Subscription'
+            )}
           </Button>
           <button
             onClick={onClose}

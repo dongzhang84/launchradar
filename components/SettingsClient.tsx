@@ -7,13 +7,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog'
+import BuyModal from '@/components/BuyModal'
 import { Loader2, X } from 'lucide-react'
 
 interface ProfileData {
@@ -353,20 +347,7 @@ export default function SettingsClient({ profile }: Props) {
         </CardContent>
       </Card>
 
-      {/* ── Upgrade placeholder modal ─────────────────────────────────── */}
-      <Dialog open={upgradeOpen} onOpenChange={setUpgradeOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Upgrade to LaunchRadar Pro</DialogTitle>
-            <DialogDescription>
-              Stripe integration coming soon. Check back shortly.
-            </DialogDescription>
-          </DialogHeader>
-          <Button onClick={() => setUpgradeOpen(false)} className="w-full">
-            Got it
-          </Button>
-        </DialogContent>
-      </Dialog>
+      <BuyModal isOpen={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </div>
   )
 }
