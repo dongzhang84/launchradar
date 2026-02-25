@@ -92,7 +92,7 @@ export default async function HomePage() {
         <div className="mx-auto max-w-sm text-center">
           <h2 className="mb-10 text-2xl font-bold tracking-tight">Simple pricing</h2>
           <div className="rounded-2xl border border-gray-200 p-8 shadow-sm">
-            <p className="text-5xl font-bold tracking-tight">$29</p>
+            <p className="text-5xl font-bold tracking-tight">$19</p>
             <p className="mt-1 text-gray-400">per month</p>
             <ul className="my-8 space-y-3 text-sm text-gray-600 text-left">
               {[
