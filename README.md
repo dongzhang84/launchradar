@@ -1,36 +1,109 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LaunchRadar
 
-## Getting Started
+Monitor Reddit and Hacker News for people asking about problems your product solves. Get a daily digest of scored, high-intent conversations with AI-generated reply suggestions.
 
-First, run the development server:
+## What it does
+
+1. You describe your product and target customer during onboarding
+2. LaunchRadar generates relevant keywords and subreddits to watch
+3. A daily cron fetches new posts, scores them with OpenAI (0–100 relevance, high/medium/low intent), and stores the best ones
+4. You get a daily email digest with reply suggestions, or browse opportunities in the dashboard
+5. Click through to reply directly on Reddit or HN
+
+## Stack
+
+- **Next.js 16** (App Router) + TypeScript
+- **Supabase** — auth + PostgreSQL
+- **Prisma v7** — ORM with `@prisma/adapter-pg`
+- **OpenAI** — scoring and reply generation
+- **Stripe** — $19/month subscription
+- **Resend + React Email** — digest emails
+- **Upstash Redis** — deduplication
+- **Vercel** — hosting + cron jobs
+
+## Local development
+
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Set environment variables
+
+Copy `.env` to `.env.local` and fill in all values:
+
+```bash
+cp .env .env.local
+```
+
+See the full list of required variables in [`CLAUDE.md`](./CLAUDE.md#environment-variables).
+
+> **Database URL:** Use the Supabase **Transaction Pooler** URL (port 6543), not the direct connection. Serverless functions can't hold persistent connections.
+
+### 3. Run database migrations
+
+```bash
+npx prisma migrate dev
+```
+
+### 4. Start the dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 5. Test the cron jobs manually
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Fetch and score new posts
+curl -X POST http://localhost:3000/api/cron/fetch-posts \
+  -H "Authorization: Bearer $CRON_SECRET"
 
-## Learn More
+# Send digest emails
+curl -X POST http://localhost:3000/api/cron/send-digests \
+  -H "Authorization: Bearer $CRON_SECRET"
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 6. Test Stripe webhooks locally
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+stripe listen --forward-to localhost:3000/api/stripe/webhook
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deployment
 
-## Deploy on Vercel
+Deployed on Vercel. Cron jobs are configured in `vercel.json` and run daily at 08:00 UTC.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Set all environment variables in the Vercel project dashboard before deploying. Add the Stripe webhook endpoint (`/api/stripe/webhook`) in the Stripe Dashboard and copy the signing secret to `STRIPE_WEBHOOK_SECRET`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Project structure
+
+```
+app/                    Pages and API routes (Next.js App Router)
+  api/
+    cron/               fetch-posts, send-digests
+    stripe/             checkout, webhook
+    onboarding/         keyword generation + profile completion
+    settings/           profile settings PATCH
+    feedback/           opportunity relevance feedback
+    opportunities/      mark as replied
+components/             React components
+  BuyModal.tsx          Stripe checkout modal
+  DashboardClient.tsx   Opportunity feed with filters
+  ReplyModal.tsx        Suggested reply viewer
+  SettingsClient.tsx    Settings forms
+lib/
+  db/client.ts          Prisma singleton (always import from here)
+  scorer.ts             OpenAI relevance scoring
+  reddit.ts             Reddit public .json API
+  hn.ts                 Hacker News Algolia API
+  digest.ts             Email digest logic
+prisma/
+  schema.prisma         Database schema
+```
+
+For a full file map and critical gotchas, see [`CLAUDE.md`](./CLAUDE.md).
+For version history, see [`CHANGELOG.md`](./CHANGELOG.md).
