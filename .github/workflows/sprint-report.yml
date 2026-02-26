@@ -1,0 +1,97 @@
+name: Sprint Report
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate SPRINT.md
+        run: |
+          node << 'NODEEOF'
+          const { execSync } = require('child_process');
+          const fs = require('fs');
+
+          const raw = execSync('git log --format=%aI', { encoding: 'utf8' }).trim();
+          if (!raw) {
+            fs.writeFileSync('SPRINT.md', '# Sprint Report\n\nNo commits yet.\n');
+            process.exit(0);
+          }
+
+          const dates = raw.split('\n').filter(Boolean).map(d => new Date(d));
+
+          function getWeekMonday(date) {
+            const d = new Date(date);
+            const day = d.getUTCDay(); // 0=Sun … 6=Sat
+            const offset = day === 0 ? 6 : day - 1;
+            d.setUTCDate(d.getUTCDate() - offset);
+            d.setUTCHours(0, 0, 0, 0);
+            return d;
+          }
+
+          const weekMap = new Map();
+
+          for (const date of dates) {
+            const monday = getWeekMonday(date);
+            const key = monday.toISOString();
+            if (!weekMap.has(key)) {
+              weekMap.set(key, { monday, total: 0, days: new Array(7).fill(0) });
+            }
+            const week = weekMap.get(key);
+            week.total++;
+            const day = date.getUTCDay();
+            week.days[day === 0 ? 6 : day - 1]++; // remap to Mon=0 … Sun=6
+          }
+
+          const weeks = [...weekMap.values()]
+            .sort((a, b) => b.monday - a.monday)
+            .slice(0, 8);
+
+          function fmt(d) { return d.toISOString().slice(0, 10); }
+
+          const DAY_ABBR = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+          const today = new Date().toISOString().slice(0, 10);
+
+          let md = `# Sprint Report\n\n> Last updated: ${today}\n\n`;
+
+          for (const week of weeks) {
+            const sun = new Date(week.monday);
+            sun.setUTCDate(sun.getUTCDate() + 6);
+
+            const active = week.days.filter(n => n > 0).length;
+            const status = active >= 5 ? '✅ Good' : active >= 3 ? '⚠️ Slow' : '❌ Stalled';
+
+            md += `## ${fmt(week.monday)} – ${fmt(sun)}\n\n`;
+            md += `| Commits | Active Days | Status |\n`;
+            md += `|---------|-------------|--------|\n`;
+            md += `| ${week.total} | ${active} / 7 | ${status} |\n\n`;
+            md += `| ${DAY_ABBR.join(' | ')} |\n`;
+            md += `|${DAY_ABBR.map(() => '-----').join('|')}|\n`;
+            md += `| ${week.days.map(n => n > 0 ? String(n) : '⚪').join(' | ')} |\n\n`;
+          }
+
+          fs.writeFileSync('SPRINT.md', md);
+          console.log('SPRINT.md written:', weeks.length, 'week(s)');
+          NODEEOF
+
+      - name: Commit SPRINT.md
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add SPRINT.md
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: update sprint report [skip ci]"
+            git push
+          else
+            echo "SPRINT.md unchanged, nothing to commit"
+          fi
