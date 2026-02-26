@@ -1,0 +1,63 @@
+name: Sprint Report
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate SPRINT.md
+        run: |
+          node << 'EOF'
+          const { execSync } = require('child_process');
+          const fs = require('fs');
+
+          // Find this week's Monday (UTC)
+          const now = new Date();
+          const day = now.getUTCDay(); // 0=Sun … 6=Sat
+          const monday = new Date(now);
+          monday.setUTCDate(monday.getUTCDate() - (day === 0 ? 6 : day - 1));
+          monday.setUTCHours(0, 0, 0, 0);
+
+          const sunday = new Date(monday);
+          sunday.setUTCDate(sunday.getUTCDate() + 6);
+
+          function fmt(d) { return d.toISOString().slice(0, 10); }
+
+          // Fetch commits since Monday
+          const raw = execSync(
+            `git log --format="%aI|%s" --since="${monday.toISOString()}"`,
+            { encoding: 'utf8' }
+          ).trim();
+
+          const commits = raw
+            ? raw.split('\n').filter(Boolean).map(line => {
+                const i = line.indexOf('|');
+                return { date: new Date(line.slice(0, i)), subject: line.slice(i + 1) };
+              })
+            : [];
+
+          let md = `# Sprint Report\n\n`;
+          md += `**Week:** ${fmt(monday)} – ${fmt(sunday)}\n`;
+          md += `**Commits:** ${commits.length}\n\n`;
+
+          if (commits.length > 0) {
+            md += `## Commits\n\n`;
+            for (const c of commits) {
+              md += `- \`${fmt(c.date)}\` ${c.subject}\n`;
+            }
+          } else {
+            md += `_No commits this week yet._\n`;
+          }
+
+          fs.writeFileSync('SPRINT.md', md);
+          console.log('SPRINT.md written with', commits.length, 'commit(s)');
+          EOF
