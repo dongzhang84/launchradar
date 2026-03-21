@@ -1,6 +1,6 @@
 # Sprint Report
 
-**Generated:** 2026-03-21 22:11 UTC  
+**Generated:** 2026-03-21 22:57 UTC  
 **Showing:** last 5 week(s) of 5 total  
 
 ---
@@ -11,14 +11,15 @@
 |------|-------|
 | Status | ❌ Stalled |
 | Active days | 1 / 7 |
-| Total commits | 1 |
+| Total commits | 2 |
 
 | Mon | Tue | Wed | Thu | Fri | Sat | Sun |
 |---|---|---|---|---|---|---|
-| ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | **1** | ⚪ |
+| ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | **2** | ⚪ |
 
 **Sat – Saturday, Mar 21**
 
+- `572d1dc` docs: prepare repo for open source — _dongzhang84_ `2026-03-21 15:55`
 - `8cb0d8b` update dosc, hold on this project — _dongzhang84_ `2026-03-21 15:10`
 
 ---
