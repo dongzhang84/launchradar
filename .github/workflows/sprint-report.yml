@@ -52,18 +52,25 @@ jobs:
             // ── 1. Fetch all commits from repo creation ──────────────────────────
             console.log('Fetching all commits from origin/main...');
             const gitLog = execSync(
-              'git log origin/main --format="%H|%ad|%an|%s" --date=format:"%Y-%m-%d %H:%M"',
+              'git log origin/main --no-merges --format="%H|%ad|%an|%s" --date=format:"%Y-%m-%d %H:%M"' +
+              ' --invert-grep --grep="chore: update SPRINT.md"',
               { encoding: 'utf8' }
             ).trim();
 
-            const commits = gitLog
+            const allCommits = gitLog
               ? gitLog.split('\n').map(line => {
                   const [hash, date, author, ...rest] = line.split('|');
                   return { hash: hash.slice(0, 7), date, author, subject: rest.join('|') };
                 })
               : [];
 
-            console.log(`Total commits found: ${commits.length}`);
+            // Belt-and-suspenders: drop any bot commits that slipped through
+            const commits = allCommits.filter(c =>
+              c.author !== 'github-actions[bot]' &&
+              !c.subject.includes('chore: update SPRINT.md')
+            );
+
+            console.log(`Total commits found: ${commits.length} (after filtering bot commits)`);
 
             // ── 2. Group commits by YYYY-MM-DD ──────────────────────────────────
             const byDay = {};
