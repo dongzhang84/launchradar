@@ -1,3 +1,5 @@
+// PERSONAL TOOL: BuyModal disabled
+/*
 'use client'
 
 import { useState } from 'react'
@@ -77,4 +79,10 @@ export default function BuyModal({ isOpen, onClose }: BuyModalProps) {
       </DialogContent>
     </Dialog>
   )
+}
+*/
+
+// Stub export so existing imports don't break
+export default function BuyModal(_props: { isOpen: boolean; onClose: () => void }) {
+  return null
 }

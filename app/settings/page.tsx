@@ -19,8 +19,8 @@ export default async function SettingsPage() {
       subreddits: true,
       emailEnabled: true,
       digestTime: true,
-      subscriptionStatus: true,
-      trialEndsAt: true,
+      // subscriptionStatus: true,  // PERSONAL TOOL: Stripe disabled
+      // trialEndsAt: true,          // PERSONAL TOOL: Stripe disabled
     },
   })
 
@@ -37,8 +37,8 @@ export default async function SettingsPage() {
           subreddits: profile.subreddits,
           emailEnabled: profile.emailEnabled,
           digestTime: profile.digestTime,
-          subscriptionStatus: profile.subscriptionStatus ?? null,
-          trialEndsAt: profile.trialEndsAt?.toISOString() ?? null,
+          // subscriptionStatus: profile.subscriptionStatus ?? null,  // PERSONAL TOOL: Stripe disabled
+          // trialEndsAt: profile.trialEndsAt?.toISOString() ?? null,  // PERSONAL TOOL: Stripe disabled
         }}
       />
     </>

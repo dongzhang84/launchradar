@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
-import BuyModal from '@/components/BuyModal'
+// import BuyModal from '@/components/BuyModal'  // PERSONAL TOOL: Stripe disabled
 import { Loader2, X } from 'lucide-react'
 
 interface ProfileData {
@@ -17,8 +17,8 @@ interface ProfileData {
   subreddits: string[]
   emailEnabled: boolean
   digestTime: number
-  subscriptionStatus: string | null
-  trialEndsAt: string | null
+  // subscriptionStatus: string | null  // PERSONAL TOOL: Stripe disabled
+  // trialEndsAt: string | null          // PERSONAL TOOL: Stripe disabled
 }
 
 interface Props {
@@ -71,13 +71,13 @@ export default function SettingsClient({ profile }: Props) {
   const [digestTime] = useState(profile.digestTime)
   const email = useSavedFeedback()
 
-  // ── Section 4: Subscription ──────────────────────────────────────────────
-  const [upgradeOpen, setUpgradeOpen] = useState(false)
-  const now = new Date()
-  const trialEndsAt = profile.trialEndsAt ? new Date(profile.trialEndsAt) : null
-  const daysLeft = trialEndsAt
-    ? Math.max(0, Math.ceil((trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
-    : 0
+  // ── Section 4: Subscription ── PERSONAL TOOL: disabled ──────────────────
+  // const [upgradeOpen, setUpgradeOpen] = useState(false)
+  // const now = new Date()
+  // const trialEndsAt = profile.trialEndsAt ? new Date(profile.trialEndsAt) : null
+  // const daysLeft = trialEndsAt
+  //   ? Math.max(0, Math.ceil((trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+  //   : 0
 
   // ── Handlers ────────────────────────────────────────────────────────────
 
@@ -316,7 +316,8 @@ export default function SettingsClient({ profile }: Props) {
         </CardContent>
       </Card>
 
-      {/* ── Section 4: Subscription ───────────────────────────────────── */}
+      {/* ── Section 4: Subscription ── PERSONAL TOOL: disabled ────────── */}
+      {/*
       <Card>
         <CardHeader>
           <CardTitle>Subscription</CardTitle>
@@ -348,6 +349,7 @@ export default function SettingsClient({ profile }: Props) {
       </Card>
 
       <BuyModal isOpen={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
+      */}
     </div>
   )
 }

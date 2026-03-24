@@ -2,14 +2,10 @@ import { redirect } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { prisma } from '@/lib/db/client'
 import DashboardClient from '@/components/DashboardClient'
-import type { SerializedOpportunity, DashboardBanner } from '@/components/DashboardClient'
+import type { SerializedOpportunity } from '@/components/DashboardClient'
 import Header from '@/components/Header'
 
-export default async function DashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ upgraded?: string }>
-}) {
+export default async function DashboardPage() {
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -18,8 +14,8 @@ export default async function DashboardPage({
   const profile = await prisma.profile.findUnique({
     where: { id: user.id },
     select: {
-      subscriptionStatus: true,
-      trialEndsAt: true,
+      // subscriptionStatus: true,  // PERSONAL TOOL: Stripe disabled
+      // trialEndsAt: true,          // PERSONAL TOOL: Stripe disabled
       onboardingComplete: true,
     },
   })
@@ -58,22 +54,23 @@ export default async function DashboardPage({
     createdAt: opp.createdAt.toISOString(),
   }))
 
-  const now = new Date()
-  const { trialEndsAt, subscriptionStatus } = profile
-  const daysRemaining = trialEndsAt
-    ? Math.ceil((trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-    : 0
-
-  const { upgraded } = await searchParams
-
-  let banner: DashboardBanner = null
-  if (upgraded === 'true') {
-    banner = { type: 'upgraded' }
-  } else if (trialEndsAt && trialEndsAt <= now && subscriptionStatus !== 'active') {
-    banner = { type: 'expired' }
-  } else if (subscriptionStatus === 'trialing' && daysRemaining > 0) {
-    banner = { type: 'trial', daysRemaining }
-  }
+  // PERSONAL TOOL: Trial/subscription banner logic disabled
+  // const now = new Date()
+  // const { trialEndsAt, subscriptionStatus } = profile
+  // const daysRemaining = trialEndsAt
+  //   ? Math.ceil((trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  //   : 0
+  //
+  // const { upgraded } = await searchParams
+  //
+  // let banner: DashboardBanner = null
+  // if (upgraded === 'true') {
+  //   banner = { type: 'upgraded' }
+  // } else if (trialEndsAt && trialEndsAt <= now && subscriptionStatus !== 'active') {
+  //   banner = { type: 'expired' }
+  // } else if (subscriptionStatus === 'trialing' && daysRemaining > 0) {
+  //   banner = { type: 'trial', daysRemaining }
+  // }
 
   return (
     <>
@@ -85,7 +82,7 @@ export default async function DashboardPage({
           repliesMade: totalReplied,
           skipped: totalSkipped,
         }}
-        banner={banner}
+        banner={null}
       />
     </>
   )

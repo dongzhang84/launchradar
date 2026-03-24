@@ -1,3 +1,7 @@
+// PERSONAL TOOL: Stripe disabled
+export {}
+
+/*
 import { type NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
@@ -33,3 +37,4 @@ export async function POST(_request: NextRequest) {
 
   return NextResponse.json({ url: session.url })
 }
+*/

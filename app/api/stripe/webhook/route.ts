@@ -1,3 +1,7 @@
+// PERSONAL TOOL: Stripe disabled
+export {}
+
+/*
 import { type NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { prisma } from '@/lib/db/client'
@@ -52,3 +56,4 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ received: true })
 }
+*/
