@@ -1,6 +1,6 @@
 # Sprint Report
 
-**Generated:** 2026-03-24 22:32 UTC  
+**Generated:** 2026-03-24 22:36 UTC  
 **Showing:** last 6 week(s) of 6 total  
 
 ---
@@ -11,14 +11,15 @@
 |------|-------|
 | Status | ❌ Stalled |
 | Active days | 1 / 7 |
-| Total commits | 7 |
+| Total commits | 8 |
 
 | Mon | Tue | Wed | Thu | Fri | Sat | Sun |
 |---|---|---|---|---|---|---|
-| ⚪ | **7** | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ |
+| ⚪ | **8** | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ |
 
 **Tue – Tuesday, Mar 24**
 
+- `e64248c` feat: add save-and-scan onboarding step and /api/opportunities/refresh (v1.1 steps 3&4) — _dongzhang84_ `2026-03-24 15:36`
 - `10ebf18` feat: remove targetCustomer from keyword generator (v1.1 step 2) — _dongzhang84_ `2026-03-24 15:32`
 - `4c4c1f9` feat: simplify onboarding to single-input form (v1.1 step 1) — _dongzhang84_ `2026-03-24 15:26`
 - `53fe803` fix: add missing RegisterForm component for register page — _dongzhang84_ `2026-03-24 15:15`
