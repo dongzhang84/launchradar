@@ -1,6 +1,6 @@
 # Sprint Report
 
-**Generated:** 2026-03-24 22:16 UTC  
+**Generated:** 2026-03-24 22:26 UTC  
 **Showing:** last 6 week(s) of 6 total  
 
 ---
@@ -11,14 +11,15 @@
 |------|-------|
 | Status | ❌ Stalled |
 | Active days | 1 / 7 |
-| Total commits | 5 |
+| Total commits | 6 |
 
 | Mon | Tue | Wed | Thu | Fri | Sat | Sun |
 |---|---|---|---|---|---|---|
-| ⚪ | **5** | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ |
+| ⚪ | **6** | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ |
 
 **Tue – Tuesday, Mar 24**
 
+- `4c4c1f9` feat: simplify onboarding to single-input form (v1.1 step 1) — _dongzhang84_ `2026-03-24 15:26`
 - `53fe803` fix: add missing RegisterForm component for register page — _dongzhang84_ `2026-03-24 15:15`
 - `9b36b66` chore: gate registration via NEXT_PUBLIC_REGISTRATION_OPEN env var — _dongzhang84_ `2026-03-24 15:05`
 - `966fe67` docs: empty readme change for workflow test — _dongzhang84_ `2026-03-24 11:59`
