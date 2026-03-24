@@ -1,5 +1,6 @@
 # LaunchRadar
 
+
 Monitor Reddit and Hacker News for high-intent conversations where people are asking about problems your product solves. LaunchRadar scores each match with AI, surfaces the best opportunities in a dashboard, and emails you a daily digest with ready-to-use reply suggestions.
 
 **Live demo:** https://launchradar-five.vercel.app
