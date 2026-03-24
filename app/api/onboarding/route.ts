@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { generateKeywordsAndSubreddits } from '@/lib/keyword-generator'
 import { prisma } from '@/lib/db/client'
+import { refreshOpportunitiesForUser } from '@/lib/refresh-opportunities'
 
 export async function POST(request: NextRequest) {
   const supabase = await createServerSupabaseClient()
@@ -20,29 +21,17 @@ export async function POST(request: NextRequest) {
 
   const { step } = body
 
-  if (step === 'generate-keywords') {
-    const { productDescription, targetCustomer } = body as {
-      productDescription: string
-      targetCustomer: string
-    }
+  if (step === 'save-and-scan') {
+    const { productDescription } = body as { productDescription: string }
 
-    const result = await generateKeywordsAndSubreddits(productDescription)
-    return NextResponse.json(result)
-  }
+    // Generate keywords and subreddits from product description (user never sees this)
+    const { keywords, subreddits } = await generateKeywordsAndSubreddits(productDescription)
 
-  if (step === 'save') {
-    const { productDescription, targetCustomer, keywords, subreddits } = body as {
-      productDescription: string
-      targetCustomer: string
-      keywords: string[]
-      subreddits: string[]
-    }
-
+    // Save profile
     await prisma.profile.upsert({
       where: { id: user.id },
       update: {
         productDescription,
-        targetCustomer,
         keywords,
         subreddits,
         onboardingComplete: true,
@@ -52,7 +41,6 @@ export async function POST(request: NextRequest) {
         email: user.email ?? '',
         password: '',
         productDescription,
-        targetCustomer,
         keywords,
         subreddits,
         onboardingComplete: true,
@@ -61,7 +49,19 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Fire and forget — scan runs in background, we return immediately
+    refreshOpportunitiesForUser(user.id).catch((err) =>
+      console.error('[onboarding] background refresh failed:', err)
+    )
+
     return NextResponse.json({ success: true })
+  }
+
+  // Legacy steps kept for reference but no longer used by the UI
+  if (step === 'generate-keywords') {
+    const { productDescription } = body as { productDescription: string }
+    const result = await generateKeywordsAndSubreddits(productDescription)
+    return NextResponse.json(result)
   }
 
   return NextResponse.json({ error: 'Unknown step' }, { status: 400 })
