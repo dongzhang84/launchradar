@@ -3,8 +3,7 @@ import OpenAI from 'openai'
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 export async function generateKeywordsAndSubreddits(
-  productDescription: string,
-  targetCustomer: string
+  productDescription: string
 ): Promise<{ keywords: string[]; subreddits: string[] }> {
   const response = await openai.chat.completions.create({
     model: 'gpt-4o',
@@ -15,16 +14,15 @@ export async function generateKeywordsAndSubreddits(
         content: `You are helping an indie hacker find their first customers on Reddit and Hacker News.
 
 Product: ${productDescription}
-Target customer: ${targetCustomer}
 
-Generate:
+Based on this product, infer who the target customer is and generate:
 1. 12-15 keywords/phrases that potential customers use when describing their PROBLEM
-   (NOT solution keywords — e.g. 'juggling too many projects' not 'project management software')
-   Include frustrated phrases: 'struggling with...', 'how do I...', 'overwhelmed by...'
+   (NOT solution keywords — focus on pain, frustration, struggle)
+   Include phrases like: 'struggling with...', 'how do I...', 'overwhelmed by...', 'can't figure out...'
 
-2. 8-10 subreddit names (without r/) where these customers hang out and ask questions
+2. 8-10 subreddit names (without r/) where these customers hang out
 
-Return JSON only: { "keywords": ["...", ...], "subreddits": ["...", ...] }`,
+Return JSON only: { "keywords": ["..."], "subreddits": ["..."] }`,
       },
     ],
   })

@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       targetCustomer: string
     }
 
-    const result = await generateKeywordsAndSubreddits(productDescription, targetCustomer)
+    const result = await generateKeywordsAndSubreddits(productDescription)
     return NextResponse.json(result)
   }
 
