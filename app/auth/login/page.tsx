@@ -12,6 +12,8 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
+  const registrationOpen = process.env.NEXT_PUBLIC_REGISTRATION_OPEN === 'true'
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
@@ -38,6 +40,11 @@ export default function LoginPage() {
           <p className="text-sm text-muted-foreground">
             Enter your email and password to continue
           </p>
+          {!registrationOpen && (
+            <p className="text-xs text-muted-foreground/60 mt-1">
+              Private tool — registration closed
+            </p>
+          )}
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
@@ -88,12 +95,14 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{' '}
-          <Link href="/auth/register" className="font-medium text-primary hover:underline">
-            Sign up
-          </Link>
-        </p>
+        {registrationOpen && (
+          <p className="text-center text-sm text-muted-foreground">
+            Don&apos;t have an account?{' '}
+            <Link href="/auth/register" className="font-medium text-primary hover:underline">
+              Sign up
+            </Link>
+          </p>
+        )}
       </div>
     </div>
   )

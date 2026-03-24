@@ -7,6 +7,8 @@ export default async function HomePage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (user) redirect('/dashboard')
 
+  const registrationOpen = process.env.NEXT_PUBLIC_REGISTRATION_OPEN === 'true'
+
   return (
     <div className="min-h-screen bg-white text-gray-900">
 
@@ -18,12 +20,14 @@ export default async function HomePage() {
             <Link href="/auth/login" className="text-gray-500 hover:text-gray-900">
               Sign in
             </Link>
-            <Link
-              href="/auth/register"
-              className="rounded-md bg-gray-900 px-4 py-2 text-white hover:bg-gray-700"
-            >
-              Start Free Trial
-            </Link>
+            {registrationOpen && (
+              <Link
+                href="/auth/register"
+                className="rounded-md bg-gray-900 px-4 py-2 text-white hover:bg-gray-700"
+              >
+                Start Free Trial
+              </Link>
+            )}
           </div>
         </div>
       </nav>
@@ -41,13 +45,24 @@ export default async function HomePage() {
           with suggested replies.
         </p>
         <div className="mt-10 flex flex-col items-center gap-3">
-          <Link
-            href="/auth/register"
-            className="rounded-lg bg-gray-900 px-8 py-3.5 text-base font-semibold text-white hover:bg-gray-700 transition-colors"
-          >
-            Start Free Trial →
-          </Link>
-          <p className="text-sm text-gray-400">7-day free trial · No credit card required</p>
+          {registrationOpen ? (
+            <>
+              <Link
+                href="/auth/register"
+                className="rounded-lg bg-gray-900 px-8 py-3.5 text-base font-semibold text-white hover:bg-gray-700 transition-colors"
+              >
+                Start Free Trial →
+              </Link>
+              <p className="text-sm text-gray-400">7-day free trial · No credit card required</p>
+            </>
+          ) : (
+            <Link
+              href="/auth/login"
+              className="rounded-lg bg-gray-900 px-8 py-3.5 text-base font-semibold text-white hover:bg-gray-700 transition-colors"
+            >
+              Login →
+            </Link>
+          )}
         </div>
       </section>
 
@@ -87,36 +102,38 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Pricing */}
-      <section className="px-6 py-20">
-        <div className="mx-auto max-w-sm text-center">
-          <h2 className="mb-10 text-2xl font-bold tracking-tight">Simple pricing</h2>
-          <div className="rounded-2xl border border-gray-200 p-8 shadow-sm">
-            <p className="text-5xl font-bold tracking-tight">$19</p>
-            <p className="mt-1 text-gray-400">per month</p>
-            <ul className="my-8 space-y-3 text-sm text-gray-600 text-left">
-              {[
-                'Daily digest of 3–5 high-intent leads',
-                'AI-generated reply suggestions',
-                'Reddit + Hacker News monitoring',
-                'Unlimited keywords & subreddits',
-              ].map((feature) => (
-                <li key={feature} className="flex items-start gap-2">
-                  <span className="mt-0.5 text-gray-900 font-bold">✓</span>
-                  {feature}
-                </li>
-              ))}
-            </ul>
-            <Link
-              href="/auth/register"
-              className="block w-full rounded-lg bg-gray-900 px-6 py-3 text-sm font-semibold text-white hover:bg-gray-700 transition-colors"
-            >
-              Start Free Trial →
-            </Link>
-            <p className="mt-3 text-xs text-gray-400">7-day free trial · Cancel anytime</p>
+      {/* Pricing — hidden when registration is closed */}
+      {registrationOpen && (
+        <section className="px-6 py-20">
+          <div className="mx-auto max-w-sm text-center">
+            <h2 className="mb-10 text-2xl font-bold tracking-tight">Simple pricing</h2>
+            <div className="rounded-2xl border border-gray-200 p-8 shadow-sm">
+              <p className="text-5xl font-bold tracking-tight">$19</p>
+              <p className="mt-1 text-gray-400">per month</p>
+              <ul className="my-8 space-y-3 text-sm text-gray-600 text-left">
+                {[
+                  'Daily digest of 3–5 high-intent leads',
+                  'AI-generated reply suggestions',
+                  'Reddit + Hacker News monitoring',
+                  'Unlimited keywords & subreddits',
+                ].map((feature) => (
+                  <li key={feature} className="flex items-start gap-2">
+                    <span className="mt-0.5 text-gray-900 font-bold">✓</span>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/auth/register"
+                className="block w-full rounded-lg bg-gray-900 px-6 py-3 text-sm font-semibold text-white hover:bg-gray-700 transition-colors"
+              >
+                Start Free Trial →
+              </Link>
+              <p className="mt-3 text-xs text-gray-400">7-day free trial · Cancel anytime</p>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* FAQ */}
       <section className="border-t border-gray-100 bg-gray-50 px-6 py-20">
