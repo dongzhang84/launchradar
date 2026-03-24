@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import StatsBar from '@/components/StatsBar'
 import OpportunityCard from '@/components/OpportunityCard'
 import ReplyModal, { type ReplyVariation } from '@/components/ReplyModal'
@@ -37,6 +38,7 @@ interface Props {
   opportunities: SerializedOpportunity[]
   stats: { opportunitiesFound: number; repliesMade: number; skipped: number }
   banner: DashboardBanner
+  scanning?: boolean
 }
 
 const FILTERS: { label: string; value: Filter }[] = [
@@ -46,7 +48,8 @@ const FILTERS: { label: string; value: Filter }[] = [
   { label: '🔥 Low', value: 'low' },
 ]
 
-export default function DashboardClient({ opportunities, stats, banner }: Props) {
+export default function DashboardClient({ opportunities, stats, banner, scanning = false }: Props) {
+  const router = useRouter()
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set())
   const [repliedIds, setRepliedIds] = useState<Set<string>>(new Set())
   const [repliedCount, setRepliedCount] = useState(stats.repliesMade)
@@ -54,6 +57,32 @@ export default function DashboardClient({ opportunities, stats, banner }: Props)
   const [activeFilter, setActiveFilter] = useState<Filter>('all')
   const [selectedOpp, setSelectedOpp] = useState<SerializedOpportunity | null>(null)
   const [buyModalOpen, setBuyModalOpen] = useState(false)
+  const [isScanning, setIsScanning] = useState(scanning)
+
+  // Poll /api/opportunities/count every 8s while scanning banner is shown.
+  // Stop when count > 0 or 60s have elapsed, then refresh the page data.
+  useEffect(() => {
+    if (!isScanning) return
+
+    let elapsed = 0
+    const id = setInterval(async () => {
+      elapsed += 8
+      try {
+        const res = await fetch('/api/opportunities/count')
+        const { count } = await res.json()
+        if (count > 0 || elapsed >= 60) {
+          clearInterval(id)
+          setIsScanning(false)
+          router.replace('/dashboard')
+          router.refresh()
+        }
+      } catch {
+        // ignore transient fetch errors during polling
+      }
+    }, 8000)
+
+    return () => clearInterval(id)
+  }, [isScanning, router])
 
   function markReplied(id: string) {
     if (repliedIds.has(id)) return
@@ -69,7 +98,14 @@ export default function DashboardClient({ opportunities, stats, banner }: Props)
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Banner */}
+      {/* Scanning banner */}
+      {isScanning && (
+        <div className="bg-blue-50 border-b border-blue-200 px-4 py-3 text-center text-sm text-blue-800">
+          🔍 Scanning Reddit &amp; HN for opportunities… this takes about 30 seconds.
+        </div>
+      )}
+
+      {/* Subscription banners (disabled for personal tool) */}
       {banner?.type === 'upgraded' && (
         <div className="bg-green-50 border-b border-green-200 px-4 py-3 text-center text-sm text-green-800">
           🎉 Welcome to LaunchRadar Pro!
@@ -120,7 +156,9 @@ export default function DashboardClient({ opportunities, stats, banner }: Props)
         {/* Cards */}
         {visible.length === 0 ? (
           <div className="py-20 text-center text-muted-foreground text-sm">
-            No opportunities yet. Your first digest arrives tomorrow morning.
+            {isScanning
+              ? 'Hang tight — your first opportunities are loading…'
+              : 'No opportunities yet. Your first digest arrives tomorrow morning.'}
           </div>
         ) : (
           <div className="space-y-4">

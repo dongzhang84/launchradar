@@ -12,7 +12,6 @@ import { Loader2, X } from 'lucide-react'
 
 interface ProfileData {
   productDescription: string
-  targetCustomer: string
   keywords: string[]
   subreddits: string[]
   emailEnabled: boolean
@@ -55,7 +54,6 @@ function useSavedFeedback() {
 export default function SettingsClient({ profile }: Props) {
   // ── Section 1: Product Info ──────────────────────────────────────────────
   const [productDescription, setProductDescription] = useState(profile.productDescription)
-  const [targetCustomer, setTargetCustomer] = useState(profile.targetCustomer)
   const [regenerating, setRegenerating] = useState(false)
   const product = useSavedFeedback()
 
@@ -65,6 +63,8 @@ export default function SettingsClient({ profile }: Props) {
   const [keywordInput, setKeywordInput] = useState('')
   const [subredditInput, setSubredditInput] = useState('')
   const monitoring = useSavedFeedback()
+  const [scanLoading, setScanLoading] = useState(false)
+  const [scanMessage, setScanMessage] = useState<string | null>(null)
 
   // ── Section 3: Email Preferences ────────────────────────────────────────
   const [emailEnabled, setEmailEnabled] = useState(profile.emailEnabled)
@@ -87,13 +87,29 @@ export default function SettingsClient({ profile }: Props) {
       const res = await fetch('/api/onboarding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ step: 'generate-keywords', productDescription, targetCustomer }),
+        body: JSON.stringify({ step: 'generate-keywords', productDescription }),
       })
       const data = await res.json()
       setKeywords(data.keywords ?? [])
       setSubreddits(data.subreddits ?? [])
     } finally {
       setRegenerating(false)
+    }
+  }
+
+  async function handleScanNow() {
+    setScanLoading(true)
+    setScanMessage(null)
+    try {
+      const res = await fetch('/api/opportunities/refresh', { method: 'POST' })
+      const data = await res.json()
+      if (data.opportunitiesSaved > 0) {
+        setScanMessage(`Found ${data.opportunitiesSaved} new opportunities!`)
+      } else {
+        setScanMessage('No new opportunities this time.')
+      }
+    } finally {
+      setScanLoading(false)
     }
   }
 
@@ -127,7 +143,7 @@ export default function SettingsClient({ profile }: Props) {
         <CardHeader>
           <CardTitle>Product Info</CardTitle>
           <CardDescription>
-            Describe your product and target customer. We use this to find relevant conversations.
+            Describe your product. We use this to find relevant conversations.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -140,21 +156,12 @@ export default function SettingsClient({ profile }: Props) {
               placeholder="Describe what your product does…"
             />
           </div>
-          <div className="space-y-2">
-            <Label>Target customer</Label>
-            <Textarea
-              value={targetCustomer}
-              onChange={(e) => setTargetCustomer(e.target.value)}
-              rows={3}
-              placeholder="Who is most likely to pay for your product?"
-            />
-          </div>
           <div className="flex items-center gap-2 flex-wrap">
             <Button
               variant="outline"
               size="sm"
               onClick={handleRegenerateKeywords}
-              disabled={regenerating || !productDescription.trim() || !targetCustomer.trim()}
+              disabled={regenerating || !productDescription.trim()}
             >
               {regenerating ? (
                 <><Loader2 className="mr-2 h-3 w-3 animate-spin" />Regenerating…</>
@@ -165,7 +172,7 @@ export default function SettingsClient({ profile }: Props) {
             <Button
               size="sm"
               disabled={product.saving}
-              onClick={() => product.run(() => patchSettings({ productDescription, targetCustomer }))}
+              onClick={() => product.run(() => patchSettings({ productDescription }))}
             >
               {product.saving ? (
                 <><Loader2 className="mr-2 h-3 w-3 animate-spin" />Saving…</>
@@ -239,19 +246,42 @@ export default function SettingsClient({ profile }: Props) {
             />
           </div>
 
-          <Button
-            size="sm"
-            disabled={monitoring.saving}
-            onClick={() => monitoring.run(() => patchSettings({ keywords, subreddits }))}
-          >
-            {monitoring.saving ? (
-              <><Loader2 className="mr-2 h-3 w-3 animate-spin" />Saving…</>
-            ) : monitoring.saved ? (
-              'Saved ✓'
-            ) : (
-              'Save Changes'
+          <div className="flex items-center gap-3 flex-wrap">
+            <Button
+              size="sm"
+              disabled={monitoring.saving}
+              onClick={() => monitoring.run(() => patchSettings({ keywords, subreddits }))}
+            >
+              {monitoring.saving ? (
+                <><Loader2 className="mr-2 h-3 w-3 animate-spin" />Saving…</>
+              ) : monitoring.saved ? (
+                'Saved ✓'
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+            {monitoring.saved && (
+              <p className="text-xs text-muted-foreground">
+                Saved! New opportunities will appear in the next scan.
+              </p>
             )}
-          </Button>
+
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={scanLoading}
+              onClick={handleScanNow}
+            >
+              {scanLoading ? (
+                <><Loader2 className="mr-2 h-3 w-3 animate-spin" />Scanning…</>
+              ) : (
+                'Scan Now'
+              )}
+            </Button>
+            {scanMessage && (
+              <p className="text-xs text-muted-foreground">{scanMessage}</p>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -323,28 +353,7 @@ export default function SettingsClient({ profile }: Props) {
           <CardTitle>Subscription</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium">Status</span>
-            {profile.subscriptionStatus === 'active' ? (
-              <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
-                Active
-              </span>
-            ) : daysLeft > 0 ? (
-              <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-700">
-                Trial — {daysLeft} day{daysLeft !== 1 ? 's' : ''} left
-              </span>
-            ) : (
-              <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
-                Trial Expired
-              </span>
-            )}
-          </div>
-
-          {profile.subscriptionStatus !== 'active' && (
-            <Button size="sm" onClick={() => setUpgradeOpen(true)}>
-              Upgrade to Pro
-            </Button>
-          )}
+          ...
         </CardContent>
       </Card>
 

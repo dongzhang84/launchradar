@@ -14,7 +14,7 @@ export default async function SettingsPage() {
     where: { id: user.id },
     select: {
       productDescription: true,
-      targetCustomer: true,
+      // targetCustomer: true,  // no longer displayed (v1.1 step 6)
       keywords: true,
       subreddits: true,
       emailEnabled: true,
@@ -32,7 +32,6 @@ export default async function SettingsPage() {
       <SettingsClient
         profile={{
           productDescription: profile.productDescription ?? '',
-          targetCustomer: profile.targetCustomer ?? '',
           keywords: profile.keywords,
           subreddits: profile.subreddits,
           emailEnabled: profile.emailEnabled,

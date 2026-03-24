@@ -5,7 +5,11 @@ import DashboardClient from '@/components/DashboardClient'
 import type { SerializedOpportunity } from '@/components/DashboardClient'
 import Header from '@/components/Header'
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ scanning?: string }>
+}) {
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -57,20 +61,9 @@ export default async function DashboardPage() {
   // PERSONAL TOOL: Trial/subscription banner logic disabled
   // const now = new Date()
   // const { trialEndsAt, subscriptionStatus } = profile
-  // const daysRemaining = trialEndsAt
-  //   ? Math.ceil((trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-  //   : 0
-  //
-  // const { upgraded } = await searchParams
-  //
-  // let banner: DashboardBanner = null
-  // if (upgraded === 'true') {
-  //   banner = { type: 'upgraded' }
-  // } else if (trialEndsAt && trialEndsAt <= now && subscriptionStatus !== 'active') {
-  //   banner = { type: 'expired' }
-  // } else if (subscriptionStatus === 'trialing' && daysRemaining > 0) {
-  //   banner = { type: 'trial', daysRemaining }
-  // }
+  // ...
+
+  const { scanning } = await searchParams
 
   return (
     <>
@@ -83,6 +76,7 @@ export default async function DashboardPage() {
           skipped: totalSkipped,
         }}
         banner={null}
+        scanning={scanning === 'true'}
       />
     </>
   )
