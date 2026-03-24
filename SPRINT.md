@@ -1,6 +1,6 @@
 # Sprint Report
 
-**Generated:** 2026-03-24 18:59 UTC  
+**Generated:** 2026-03-24 22:05 UTC  
 **Showing:** last 6 week(s) of 6 total  
 
 ---
@@ -11,14 +11,15 @@
 |------|-------|
 | Status | ❌ Stalled |
 | Active days | 1 / 7 |
-| Total commits | 3 |
+| Total commits | 4 |
 
 | Mon | Tue | Wed | Thu | Fri | Sat | Sun |
 |---|---|---|---|---|---|---|
-| ⚪ | **3** | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ |
+| ⚪ | **4** | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ |
 
 **Tue – Tuesday, Mar 24**
 
+- `9b36b66` chore: gate registration via NEXT_PUBLIC_REGISTRATION_OPEN env var — _dongzhang84_ `2026-03-24 15:05`
 - `966fe67` docs: empty readme change for workflow test — _dongzhang84_ `2026-03-24 11:59`
 - `17cf26a` chore: add playbook notify workflow and sprint summary script — _dongzhang84_ `2026-03-24 11:56`
 - `887c7ea` chore: disable Stripe/subscription code for personal tool use — _dongzhang84_ `2026-03-24 11:43`
