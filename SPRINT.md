@@ -1,6 +1,6 @@
 # Sprint Report
 
-**Generated:** 2026-03-24 22:41 UTC  
+**Generated:** 2026-03-25 05:00 UTC  
 **Showing:** last 6 week(s) of 6 total  
 
 ---
@@ -11,14 +11,15 @@
 |------|-------|
 | Status | ❌ Stalled |
 | Active days | 1 / 7 |
-| Total commits | 9 |
+| Total commits | 10 |
 
 | Mon | Tue | Wed | Thu | Fri | Sat | Sun |
 |---|---|---|---|---|---|---|
-| ⚪ | **9** | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ |
+| ⚪ | **10** | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ |
 
 **Tue – Tuesday, Mar 24**
 
+- `c748f4f` debug: add logging to refresh route and refresh-opportunities lib — _dongzhang84_ `2026-03-24 22:00`
 - `4ecf907` feat: scanning banner + polling, settings cleanup (v1.1 steps 5&6) — _dongzhang84_ `2026-03-24 15:40`
 - `e64248c` feat: add save-and-scan onboarding step and /api/opportunities/refresh (v1.1 steps 3&4) — _dongzhang84_ `2026-03-24 15:36`
 - `10ebf18` feat: remove targetCustomer from keyword generator (v1.1 step 2) — _dongzhang84_ `2026-03-24 15:32`
