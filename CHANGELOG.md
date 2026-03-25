@@ -6,6 +6,31 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.1.0] — 2026-03-24
+
+### Added
+- **Instant first scan** — onboarding now triggers a background `refreshOpportunitiesForUser` call immediately after saving the profile; results appear within 30–60 seconds without waiting for the daily cron
+- `POST /api/opportunities/refresh` — on-demand scan endpoint authenticated via Supabase session; calls the shared refresh pipeline and returns `{ opportunitiesSaved: N }`; `maxDuration = 60` for Vercel
+- `GET /api/opportunities/count` — lightweight polling endpoint returning `{ count: N }` for the current user
+- **Scanning banner** — dashboard shows a blue "Scanning Reddit & HN…" banner when redirected with `?scanning=true`; polls `/api/opportunities/count` every 8 seconds and auto-refreshes the page once results arrive (or after 60 s)
+- **Scan Now button** in Settings — triggers `/api/opportunities/refresh` and displays the count of new opportunities found
+- `lib/refresh-opportunities.ts` — shared fetch/score/save pipeline extracted from the cron handler; used by both onboarding (fire-and-forget) and the on-demand refresh endpoint
+- `NEXT_PUBLIC_REGISTRATION_OPEN` env var — gates new sign-ups; when `'false'`, `/auth/register` redirects to login, the register link is hidden on the login page, and landing page CTAs/pricing section are hidden
+
+### Changed
+- **Onboarding simplified** to a single textarea — user enters a product description only; the AI now infers the target customer automatically
+- `lib/keyword-generator.ts` — removed `targetCustomer` parameter; the prompt instructs the model to infer the target audience from the product description
+- `app/api/onboarding/route.ts` — replaced the two-step `generate-keywords` + `complete` flow with a single `save-and-scan` step; the legacy `generate-keywords` step is kept for the Settings re-generate button
+- `app/auth/register/page.tsx` — converted to a server component wrapper that enforces the registration gate; the form itself moved to `RegisterForm.tsx` (client component)
+- Landing page conditionally renders "Start Free Trial" CTAs and pricing section based on `NEXT_PUBLIC_REGISTRATION_OPEN`
+- Stripe/subscription code disabled (block-commented) across `checkout/route.ts`, `webhook/route.ts`, and `BuyModal.tsx`; `BuyModal` exports a null-returning stub so existing imports compile
+
+### Removed
+- `targetCustomer` field removed from onboarding UI, Settings form, keyword generator call, and all Prisma selects (field still exists in schema)
+- Subscription banner logic removed from dashboard server component (hardcoded to `banner={null}`)
+
+---
+
 ## [0.8.0] — 2026-02-24
 
 ### Added

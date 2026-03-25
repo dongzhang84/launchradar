@@ -9,11 +9,12 @@ Monitor Reddit and Hacker News for high-intent conversations where people are as
 
 ## How it works
 
-1. **Onboarding** — describe your product and target customer
-2. **Keyword generation** — OpenAI generates relevant keywords and subreddits to watch
+1. **Onboarding** — describe your product in one sentence; OpenAI infers your target customer and generates keywords and subreddits automatically
+2. **Instant first scan** — as soon as onboarding completes, a scan runs immediately and results appear within 30–60 seconds
 3. **Daily fetch** — a cron job scrapes Reddit and Hacker News for new posts, scores each one 0–100 for relevance and tags intent (high / medium / low)
 4. **Dashboard** — browse and filter opportunities; click through to reply on Reddit or HN
 5. **Digest email** — receive a daily summary of the top opportunities with AI-generated reply suggestions
+6. **Manual scan** — trigger an on-demand scan any time from the Settings page
 
 ---
 
@@ -123,6 +124,9 @@ STRIPE_WEBHOOK_SECRET=whsec_...   # leave blank until step 7
 
 # Cron authentication (any random secret)
 CRON_SECRET=your-random-secret    # generate with: openssl rand -base64 32
+
+# Registration gate — set to 'true' to allow new sign-ups, 'false' to lock registration
+NEXT_PUBLIC_REGISTRATION_OPEN=true
 ```
 
 ### 7. Run database migrations
@@ -152,13 +156,17 @@ Copy the `whsec_...` secret that appears and set it as `STRIPE_WEBHOOK_SECRET` i
 ### 10. Test the cron jobs
 
 ```bash
-# Fetch Reddit + HN posts, score them, store opportunities
+# Fetch Reddit + HN posts, score them, store opportunities (all users)
 curl -X POST http://localhost:3000/api/cron/fetch-posts \
   -H "Authorization: Bearer $CRON_SECRET"
 
 # Send digest emails to all users with email enabled
 curl -X POST http://localhost:3000/api/cron/send-digests \
   -H "Authorization: Bearer $CRON_SECRET"
+
+# On-demand scan for the logged-in user (session auth — run from browser or with session cookie)
+curl -X POST http://localhost:3000/api/opportunities/refresh \
+  -H "Cookie: <paste session cookie from browser>"
 ```
 
 ---
@@ -175,44 +183,53 @@ curl -X POST http://localhost:3000/api/cron/send-digests \
 ## Project structure
 
 ```
-app/
-  page.tsx                    Landing page
-  dashboard/page.tsx          Dashboard (server component)
-  onboarding/page.tsx         Multi-step onboarding wizard
-  settings/page.tsx           Settings page
-  auth/login|register/        Supabase email/password auth
-  api/
-    cron/fetch-posts/         Scrapes Reddit + HN, scores with OpenAI, stores opportunities
-    cron/send-digests/        Sends daily digest emails via Resend
-    stripe/checkout/          Creates Stripe Checkout Session
-    stripe/webhook/           Handles Stripe events (raw body — do not change to .json())
-    onboarding/               Generates keywords + marks onboarding complete
-    settings/                 PATCH profile settings
-    feedback/                 Records opportunity relevance feedback
-    opportunities/[id]/reply/ Marks opportunity as replied
-
-components/
-  DashboardClient.tsx         Filter tabs + opportunity feed
-  OpportunityCard.tsx         Individual opportunity with action buttons
-  ReplyModal.tsx              AI-suggested reply viewer
-  BuyModal.tsx                Stripe subscription checkout modal
-  SettingsClient.tsx          Settings forms
-  StatsBar.tsx                Stats counters (found / replied / skipped)
-  Header.tsx                  Top nav
-
-lib/
-  db/client.ts                Prisma singleton — always import from here
-  supabase/server.ts          Server-side Supabase client
-  supabase/client.ts          Browser Supabase client
-  scorer.ts                   OpenAI relevance scoring (0–100 + intent + reply suggestions)
-  keyword-generator.ts        OpenAI keyword + subreddit generation
-  reddit.ts                   Reddit public .json API fetcher (no OAuth needed)
-  hn.ts                       Hacker News Algolia API fetcher
-  digest.ts                   Selects top opportunities for digest email
-  email-templates/digest.tsx  React Email digest template
-
-prisma/
-  schema.prisma               Database schema (Profile, Opportunity, Feedback)
+├── app/
+│   ├── page.tsx                          Landing page
+│   ├── dashboard/page.tsx                Dashboard (server component)
+│   ├── onboarding/page.tsx               Single-input onboarding form
+│   ├── settings/page.tsx                 Settings page
+│   ├── auth/
+│   │   ├── login/                        Supabase email/password auth
+│   │   └── register/                     Supabase email/password auth
+│   └── api/
+│       ├── cron/
+│       │   ├── fetch-posts/              Scrapes Reddit + HN, scores with OpenAI, stores opportunities
+│       │   └── send-digests/             Sends daily digest emails via Resend
+│       ├── stripe/
+│       │   ├── checkout/                 Creates Stripe Checkout Session
+│       │   └── webhook/                  Handles Stripe events (raw body — do not change to .json())
+│       ├── opportunities/
+│       │   ├── [id]/reply/               Marks opportunity as replied
+│       │   ├── refresh/                  On-demand per-user fetch + score
+│       │   └── count/                    Returns opportunity count for current user
+│       ├── onboarding/                   Generates keywords + marks onboarding complete
+│       ├── settings/                     PATCH profile settings
+│       └── feedback/                     Records opportunity relevance feedback
+│
+├── components/
+│   ├── DashboardClient.tsx               Filter tabs + opportunity feed
+│   ├── OpportunityCard.tsx               Individual opportunity with action buttons
+│   ├── ReplyModal.tsx                    AI-suggested reply viewer
+│   ├── BuyModal.tsx                      Stripe subscription checkout modal
+│   ├── SettingsClient.tsx                Settings forms
+│   ├── StatsBar.tsx                      Stats counters (found / replied / skipped)
+│   └── Header.tsx                        Top nav
+│
+├── lib/
+│   ├── db/client.ts                      Prisma singleton — always import from here
+│   ├── supabase/
+│   │   ├── server.ts                     Server-side Supabase client
+│   │   └── client.ts                     Browser Supabase client
+│   ├── scorer.ts                         OpenAI relevance scoring (0–100 + intent + reply suggestions)
+│   ├── keyword-generator.ts              OpenAI keyword + subreddit generation
+│   ├── refresh-opportunities.ts          Shared fetch/score/save logic for a single user
+│   ├── reddit.ts                         Reddit public .json API fetcher (no OAuth needed)
+│   ├── hn.ts                             Hacker News Algolia API fetcher
+│   ├── digest.ts                         Selects top opportunities for digest email
+│   └── email-templates/digest.tsx        React Email digest template
+│
+└── prisma/
+    └── schema.prisma                     Database schema (Profile, Opportunity, Feedback)
 ```
 
 ---
