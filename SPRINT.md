@@ -1,6 +1,6 @@
 # Sprint Report
 
-**Generated:** 2026-03-25 07:08 UTC  
+**Generated:** 2026-03-25 07:10 UTC  
 **Showing:** last 6 week(s) of 6 total  
 
 ---
@@ -11,11 +11,11 @@
 |------|-------|
 | Status | ❌ Stalled |
 | Active days | 2 / 7 |
-| Total commits | 13 |
+| Total commits | 14 |
 
 | Mon | Tue | Wed | Thu | Fri | Sat | Sun |
 |---|---|---|---|---|---|---|
-| ⚪ | **12** | **1** | ⚪ | ⚪ | ⚪ | ⚪ |
+| ⚪ | **12** | **2** | ⚪ | ⚪ | ⚪ | ⚪ |
 
 **Tue – Tuesday, Mar 24**
 
@@ -34,6 +34,7 @@
 
 **Wed – Wednesday, Mar 25**
 
+- `04a1641` docs: update CHANGELOG and CLAUDE.md for v1.2 — _dongzhang84_ `2026-03-25 00:10`
 - `ad57879` feat: add Clear History button and silent 404 subreddit skip — _dongzhang84_ `2026-03-25 00:08`
 
 ---
