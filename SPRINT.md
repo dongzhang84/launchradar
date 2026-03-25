@@ -1,6 +1,6 @@
 # Sprint Report
 
-**Generated:** 2026-03-25 05:22 UTC  
+**Generated:** 2026-03-25 05:41 UTC  
 **Showing:** last 6 week(s) of 6 total  
 
 ---
@@ -11,14 +11,15 @@
 |------|-------|
 | Status | ❌ Stalled |
 | Active days | 1 / 7 |
-| Total commits | 11 |
+| Total commits | 12 |
 
 | Mon | Tue | Wed | Thu | Fri | Sat | Sun |
 |---|---|---|---|---|---|---|
-| ⚪ | **11** | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ |
+| ⚪ | **12** | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ |
 
 **Tue – Tuesday, Mar 24**
 
+- `f33a293` fix: remove founder-community bias from subreddit generation — _dongzhang84_ `2026-03-24 22:33`
 - `3cc9a32` docs: update README, CLAUDE.md, and CHANGELOG for v1.1 — _dongzhang84_ `2026-03-24 22:21`
 - `c748f4f` debug: add logging to refresh route and refresh-opportunities lib — _dongzhang84_ `2026-03-24 22:00`
 - `4ecf907` feat: scanning banner + polling, settings cleanup (v1.1 steps 5&6) — _dongzhang84_ `2026-03-24 15:40`
