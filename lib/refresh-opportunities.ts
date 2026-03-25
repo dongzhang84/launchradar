@@ -46,6 +46,9 @@ export async function refreshOpportunitiesForUser(userId: string): Promise<numbe
     return 0
   }
 
+  console.log(`[refresh] User ${userId} — keywords: [${profile.keywords.join(', ')}]`)
+  console.log(`[refresh] User ${userId} — subreddits: [${profile.subreddits.join(', ')}]`)
+
   // Fetch Reddit posts for each of the user's subreddits
   const redditPosts: NormalizedPost[] = []
   await Promise.all(
@@ -130,6 +133,7 @@ export async function refreshOpportunitiesForUser(userId: string): Promise<numbe
     skipDuplicates: true,
   })
 
-  console.log(`[refresh] User ${userId} — saved ${result.count} new opportunity(ies)`)
+  const duplicates = scored.length - result.count
+  console.log(`[refresh] User ${userId} — saved ${result.count} new opportunity(ies) (${duplicates} skipped as duplicates)`)
   return result.count
 }

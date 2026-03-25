@@ -12,6 +12,8 @@ export async function POST() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  console.log(`[refresh] Triggered by user: ${user.id} (${user.email})`)
+
   try {
     const opportunitiesSaved = await refreshOpportunitiesForUser(user.id)
     return NextResponse.json({ success: true, opportunitiesSaved })
