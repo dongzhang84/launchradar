@@ -23,7 +23,9 @@ export async function fetchSubredditPosts(subreddit: string): Promise<RedditPost
   }
 
   if (!response.ok) {
-    console.error(`[reddit] r/${subreddit} returned ${response.status}`)
+    if (response.status !== 404) {
+      console.error(`[reddit] r/${subreddit} returned ${response.status}`)
+    }
     return []
   }
 

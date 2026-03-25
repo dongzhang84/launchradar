@@ -71,6 +71,11 @@ export default function SettingsClient({ profile }: Props) {
   const [digestTime] = useState(profile.digestTime)
   const email = useSavedFeedback()
 
+  // ── Section 4: Danger Zone ───────────────────────────────────────────────
+  const [clearConfirm, setClearConfirm] = useState(false)
+  const [clearLoading, setClearLoading] = useState(false)
+  const [clearMessage, setClearMessage] = useState<string | null>(null)
+
   // ── Section 4: Subscription ── PERSONAL TOOL: disabled ──────────────────
   // const [upgradeOpen, setUpgradeOpen] = useState(false)
   // const now = new Date()
@@ -94,6 +99,18 @@ export default function SettingsClient({ profile }: Props) {
       setSubreddits(data.subreddits ?? [])
     } finally {
       setRegenerating(false)
+    }
+  }
+
+  async function handleClearHistory() {
+    setClearLoading(true)
+    setClearMessage(null)
+    try {
+      await fetch('/api/opportunities', { method: 'DELETE' })
+      setClearConfirm(false)
+      setClearMessage('History cleared. Click Scan Now to find new opportunities.')
+    } finally {
+      setClearLoading(false)
     }
   }
 
@@ -346,7 +363,64 @@ export default function SettingsClient({ profile }: Props) {
         </CardContent>
       </Card>
 
-      {/* ── Section 4: Subscription ── PERSONAL TOOL: disabled ────────── */}
+      {/* ── Section 4: Danger Zone ────────────────────────────────────── */}
+      <Card className="border-destructive/40">
+        <CardHeader>
+          <CardTitle className="text-destructive">Danger Zone</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!clearConfirm ? (
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Clear opportunity history</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Delete all saved opportunities for your account.
+                </p>
+              </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => { setClearConfirm(true); setClearMessage(null) }}
+              >
+                Clear History
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm">
+                This will delete all your opportunities. Are you sure?
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={clearLoading}
+                  onClick={handleClearHistory}
+                >
+                  {clearLoading ? (
+                    <><Loader2 className="mr-2 h-3 w-3 animate-spin" />Deleting…</>
+                  ) : (
+                    'Yes, delete all'
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={clearLoading}
+                  onClick={() => setClearConfirm(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+          {clearMessage && (
+            <p className="text-xs text-muted-foreground">{clearMessage}</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── Section 5: Subscription ── PERSONAL TOOL: disabled ────────── */}
       {/*
       <Card>
         <CardHeader>
