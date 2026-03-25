@@ -74,7 +74,7 @@ export async function fetchHNStories(limit: number = 100): Promise<HNStory[]> {
     items.push(...results)
   }
 
-  const cutoff = Date.now() / 1000 - 24 * 60 * 60
+  const cutoff = Date.now() / 1000 - 72 * 60 * 60
 
   return items
     .filter((item): item is HNItem =>

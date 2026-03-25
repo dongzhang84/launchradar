@@ -14,7 +14,7 @@ export async function fetchSubredditPosts(subreddit: string): Promise<RedditPost
   let response: Response
   try {
     response = await fetch(
-      `https://www.reddit.com/r/${subreddit}/new.json?limit=100`,
+      `https://www.reddit.com/r/${subreddit}/new.json?limit=200`,
       { headers: { 'User-Agent': 'LaunchRadar/1.0' } }
     )
   } catch {
@@ -56,7 +56,7 @@ export async function fetchSubredditPosts(subreddit: string): Promise<RedditPost
     }
   }
 
-  const cutoff = Date.now() / 1000 - 24 * 60 * 60
+  const cutoff = Date.now() / 1000 - 72 * 60 * 60
 
   return listing.data.children
     .map((child) => child.data)
