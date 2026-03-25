@@ -6,6 +6,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.2.0] — 2026-03-25
+
+### Added
+- **Clear History** button in Settings (Danger Zone card) — shows an inline confirmation dialog before deleting all opportunities; displays "History cleared. Click Scan Now to find new opportunities." on success
+- `DELETE /api/opportunities` — deletes all Opportunity records for the current user (session auth); returns `{ success: true, deleted: N }`
+
+### Changed
+- **Subreddit generation prompt** updated to target end-user communities instead of defaulting to generic founder/indie hacker subreddits; niche-specific subreddits are now preferred (e.g. `r/shopify` over `r/entrepreneur`); founder communities (`r/entrepreneur`, `r/startups`, `r/sideproject`, `r/indiehackers`) are only included when the product explicitly targets founders or developers
+- **Reddit 404s are now silent** — `fetchSubredditPosts` no longer logs an error for nonexistent subreddits (HTTP 404); other non-2xx errors (403, 429, 5xx) still log as before
+
+---
+
 ## [1.1.0] — 2026-03-24
 
 ### Added

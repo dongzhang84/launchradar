@@ -136,6 +136,7 @@ app/
     onboarding/route.ts             POST — save-and-scan step: generates keywords, saves profile, triggers background refresh
     settings/route.ts               PATCH — update profile settings
     feedback/route.ts               POST — record opportunity relevance feedback
+    opportunities/route.ts          DELETE — delete all opportunities for the current user
     opportunities/[id]/reply/route.ts  POST — mark opportunity as replied
     opportunities/refresh/route.ts  POST — on-demand scan for the logged-in user (session auth)
     opportunities/count/route.ts    GET — returns opportunity count for polling
@@ -145,7 +146,7 @@ components/
   OpportunityCard.tsx               Individual opportunity with action buttons
   ReplyModal.tsx                    Shadcn Dialog with suggested reply variations
   BuyModal.tsx                      DISABLED stub — renders null (Stripe disabled)
-  SettingsClient.tsx                Client: all settings forms + Scan Now button
+  SettingsClient.tsx                Client: all settings forms + Scan Now + Clear History buttons
   StatsBar.tsx                      Opportunities / replies / skipped counters
   Header.tsx                        Top nav with email, settings link, logout
 
@@ -155,7 +156,7 @@ lib/
   supabase/client.ts                createBrowserSupabaseClient() for Client Components
   supabase/admin.ts                 Admin client (service role key)
   scorer.ts                         OpenAI scoring — relevance 0–100, intent level, replies
-  keyword-generator.ts              OpenAI keyword + subreddit generation from product desc (no targetCustomer)
+  keyword-generator.ts              OpenAI keyword + subreddit generation from product desc; subreddits target end-user communities, not founder/dev communities
   refresh-opportunities.ts          Shared fetch/score/save pipeline for a single user
   reddit.ts                         Reddit public .json API fetcher
   hn.ts                             HN Algolia API fetcher
