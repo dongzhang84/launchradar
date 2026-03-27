@@ -114,6 +114,13 @@ export default function OpportunityCard({ opportunity, externalReplied, onViewRe
             {opportunity.title}
           </a>
 
+          {/* Thread body preview */}
+          {opportunity.body && (
+            <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">
+              {opportunity.body}
+            </p>
+          )}
+
           {/* Reasoning */}
           <p className="text-sm text-muted-foreground">
             <span className="font-medium text-foreground">Why relevant: </span>
