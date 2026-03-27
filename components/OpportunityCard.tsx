@@ -146,7 +146,7 @@ export default function OpportunityCard({ opportunity, externalReplied, onViewRe
                 disabled={replying}
                 className="text-muted-foreground hover:text-foreground"
               >
-                {replying ? 'Saving…' : 'Mark Replied'}
+                {replying ? 'Saving…' : 'Mark as Replied'}
               </Button>
             )}
 
