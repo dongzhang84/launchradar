@@ -1,6 +1,6 @@
 # Sprint Report
 
-**Generated:** 2026-03-25 18:10 UTC  
+**Generated:** 2026-03-27 22:41 UTC  
 **Showing:** last 6 week(s) of 6 total  
 
 ---
@@ -9,13 +9,13 @@
 
 | Stat | Value |
 |------|-------|
-| Status | ❌ Stalled |
-| Active days | 2 / 7 |
-| Total commits | 15 |
+| Status | ⚠️ Slow |
+| Active days | 3 / 7 |
+| Total commits | 16 |
 
 | Mon | Tue | Wed | Thu | Fri | Sat | Sun |
 |---|---|---|---|---|---|---|
-| ⚪ | **12** | **3** | ⚪ | ⚪ | ⚪ | ⚪ |
+| ⚪ | **12** | **3** | ⚪ | **1** | ⚪ | ⚪ |
 
 **Tue – Tuesday, Mar 24**
 
@@ -37,6 +37,10 @@
 - `c5e8105` feat: expand fetch window to 72h and 200 posts per subreddit — _dongzhang84_ `2026-03-25 11:09`
 - `04a1641` docs: update CHANGELOG and CLAUDE.md for v1.2 — _dongzhang84_ `2026-03-25 00:10`
 - `ad57879` feat: add Clear History button and silent 404 subreddit skip — _dongzhang84_ `2026-03-25 00:08`
+
+**Fri – Friday, Mar 27**
+
+- `9f2901b` perf: parallelize OpenAI scoring and add configurable HN fetch limit — _dongzhang84_ `2026-03-27 15:41`
 
 ---
 
