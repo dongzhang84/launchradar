@@ -45,6 +45,14 @@ export default function OpportunityCard({ opportunity, externalReplied, onViewRe
     if (externalReplied) setReplied(true)
   }, [externalReplied])
   const [replying, setReplying] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  function handleCopy(text: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
   const [fading, setFading] = useState(false)
   const [hidden, setHidden] = useState(false)
 
@@ -126,6 +134,38 @@ export default function OpportunityCard({ opportunity, externalReplied, onViewRe
             <span className="font-medium text-foreground">Why relevant: </span>
             {opportunity.reasoning}
           </p>
+
+          {/* Suggested reply */}
+          {opportunity.suggestedReplies?.length > 0 && (
+            <div className="space-y-2 pt-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Suggested Reply
+                </span>
+                {opportunity.suggestedReplies[0].label && (
+                  <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+                    {opportunity.suggestedReplies[0].label}
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 border-l-2 border-blue-200 px-3 py-2 rounded-r-md whitespace-pre-wrap line-clamp-4">
+                {opportunity.suggestedReplies[0].text}
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => handleCopy(opportunity.suggestedReplies[0].text)}
+                  className="text-xs text-muted-foreground hover:text-foreground border border-border rounded px-2 py-1 transition-colors"
+                >
+                  {copied ? 'Copied ✓' : 'Copy'}
+                </button>
+                {opportunity.suggestedReplies.length > 1 && (
+                  <span className="text-xs text-muted-foreground">
+                    +{opportunity.suggestedReplies.length - 1} more variation{opportunity.suggestedReplies.length > 2 ? 's' : ''} in modal
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex gap-2 pt-1">

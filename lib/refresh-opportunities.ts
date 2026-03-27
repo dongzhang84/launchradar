@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db/client'
 import { fetchSubredditPosts, type RedditPost } from '@/lib/reddit'
 import { fetchHNStories, type HNStory } from '@/lib/hn'
 import { scorePosts, type PostToScore } from '@/lib/scorer'
+import { generateReplies } from '@/lib/reply-generator'
 
 interface NormalizedPost {
   externalId: string
@@ -109,6 +110,25 @@ export async function refreshOpportunitiesForUser(userId: string): Promise<numbe
 
   const metaMap = new Map(capped.map((p) => [p.externalId, p]))
 
+  // Generate replies in parallel for high/medium intent posts only
+  const repliesMap = new Map<string, object[]>()
+  await Promise.all(
+    scored
+      .filter((p) => p.intentLevel === 'high' || p.intentLevel === 'medium')
+      .map(async (p) => {
+        const meta = metaMap.get(p.externalId)!
+        try {
+          const replies = await generateReplies(
+            { title: p.title, body: p.body ?? '', subreddit: meta.subreddit },
+            { productDescription: profile.productDescription ?? '', targetCustomer: profile.targetCustomer ?? '' }
+          )
+          repliesMap.set(p.externalId, replies as object[])
+        } catch {
+          console.error(`[refresh] Failed to generate replies for ${p.externalId}`)
+        }
+      })
+  )
+
   const result = await prisma.opportunity.createMany({
     data: scored.map((p) => {
       const meta = metaMap.get(p.externalId)!
@@ -127,7 +147,7 @@ export async function refreshOpportunitiesForUser(userId: string): Promise<numbe
         relevanceScore: p.relevanceScore,
         intentLevel: p.intentLevel,
         reasoning: p.reasoning,
-        suggestedReplies: [],
+        suggestedReplies: repliesMap.get(p.externalId) ?? [],
       }
     }),
     skipDuplicates: true,
