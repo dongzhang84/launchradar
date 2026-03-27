@@ -26,6 +26,7 @@ model Profile {
 
   keywords            String[]  @default([])
   subreddits          String[]  @default([])
+  hnFetchLimit        Int       @default(50)
   digestFrequency     String    @default("daily")
   emailEnabled        Boolean   @default(true)
   digestTime          Int       @default(8)

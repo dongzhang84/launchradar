@@ -14,6 +14,7 @@ interface ProfileData {
   productDescription: string
   keywords: string[]
   subreddits: string[]
+  hnFetchLimit: number
   emailEnabled: boolean
   digestTime: number
   // subscriptionStatus: string | null  // PERSONAL TOOL: Stripe disabled
@@ -60,6 +61,7 @@ export default function SettingsClient({ profile }: Props) {
   // ── Section 2: Keywords & Subreddits ────────────────────────────────────
   const [keywords, setKeywords] = useState(profile.keywords)
   const [subreddits, setSubreddits] = useState(profile.subreddits)
+  const [hnFetchLimit, setHnFetchLimit] = useState(profile.hnFetchLimit)
   const [keywordInput, setKeywordInput] = useState('')
   const [subredditInput, setSubredditInput] = useState('')
   const monitoring = useSavedFeedback()
@@ -263,11 +265,29 @@ export default function SettingsClient({ profile }: Props) {
             />
           </div>
 
+          {/* HN fetch limit */}
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Hacker News posts per scan</Label>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Lower values are faster. Max 200. (Default: 50)
+              </p>
+            </div>
+            <Input
+              type="number"
+              min={10}
+              max={200}
+              value={hnFetchLimit}
+              onChange={(e) => setHnFetchLimit(Math.min(200, Math.max(10, Number(e.target.value))))}
+              className="w-20 text-right"
+            />
+          </div>
+
           <div className="flex items-center gap-3 flex-wrap">
             <Button
               size="sm"
               disabled={monitoring.saving}
-              onClick={() => monitoring.run(() => patchSettings({ keywords, subreddits }))}
+              onClick={() => monitoring.run(() => patchSettings({ keywords, subreddits, hnFetchLimit }))}
             >
               {monitoring.saving ? (
                 <><Loader2 className="mr-2 h-3 w-3 animate-spin" />Saving…</>

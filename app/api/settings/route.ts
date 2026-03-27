@@ -25,6 +25,7 @@ export async function PATCH(request: NextRequest) {
     subreddits?: string[]
     emailEnabled?: boolean
     digestTime?: number
+    hnFetchLimit?: number
   } = {}
 
   if ('productDescription' in body) data.productDescription = body.productDescription as string
@@ -33,6 +34,7 @@ export async function PATCH(request: NextRequest) {
   if ('subreddits'         in body) data.subreddits         = body.subreddits         as string[]
   if ('emailEnabled'       in body) data.emailEnabled       = body.emailEnabled       as boolean
   if ('digestTime'         in body) data.digestTime         = body.digestTime         as number
+  if ('hnFetchLimit'       in body) data.hnFetchLimit       = body.hnFetchLimit       as number
 
   await prisma.profile.update({ where: { id: user.id }, data })
 

@@ -38,7 +38,7 @@ function matchesKeywords(post: NormalizedPost, keywords: string[]): boolean {
 export async function refreshOpportunitiesForUser(userId: string): Promise<number> {
   const profile = await prisma.profile.findUnique({
     where: { id: userId },
-    select: { keywords: true, subreddits: true, productDescription: true, targetCustomer: true },
+    select: { keywords: true, subreddits: true, productDescription: true, targetCustomer: true, hnFetchLimit: true },
   })
 
   if (!profile || profile.keywords.length === 0) {
@@ -66,7 +66,7 @@ export async function refreshOpportunitiesForUser(userId: string): Promise<numbe
   // Fetch HN stories
   let hnStories: NormalizedPost[] = []
   try {
-    hnStories = (await fetchHNStories(150)).map(fromHN)
+    hnStories = (await fetchHNStories(profile.hnFetchLimit)).map(fromHN)
     console.log(`[refresh] HN: fetched ${hnStories.length} story(ies)`)
   } catch {
     console.error('[refresh] Failed to fetch HN stories')

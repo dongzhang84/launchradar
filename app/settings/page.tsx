@@ -17,6 +17,7 @@ export default async function SettingsPage() {
       // targetCustomer: true,  // no longer displayed (v1.1 step 6)
       keywords: true,
       subreddits: true,
+      hnFetchLimit: true,
       emailEnabled: true,
       digestTime: true,
       // subscriptionStatus: true,  // PERSONAL TOOL: Stripe disabled
@@ -34,6 +35,7 @@ export default async function SettingsPage() {
           productDescription: profile.productDescription ?? '',
           keywords: profile.keywords,
           subreddits: profile.subreddits,
+          hnFetchLimit: profile.hnFetchLimit,
           emailEnabled: profile.emailEnabled,
           digestTime: profile.digestTime,
           // subscriptionStatus: profile.subscriptionStatus ?? null,  // PERSONAL TOOL: Stripe disabled

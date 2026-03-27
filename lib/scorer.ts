@@ -88,26 +88,28 @@ export async function scorePosts(
 ): Promise<ScoredPost[]> {
   if (posts.length === 0) return []
 
-  const allResults: ScorerResult[] = []
-
+  const batches: PostToScore[][] = []
   for (let i = 0; i < posts.length; i += BATCH_SIZE) {
-    const batch = posts.slice(i, i + BATCH_SIZE)
-    try {
-      const results = await scoreBatch(batch, productDescription, targetCustomer)
-      allResults.push(...results)
-    } catch (err) {
-      console.error(`[scorer] Batch ${i / BATCH_SIZE + 1} failed:`, err)
-      // Fall back to a neutral score so the batch isn't silently dropped
-      for (const post of batch) {
-        allResults.push({
+    batches.push(posts.slice(i, i + BATCH_SIZE))
+  }
+
+  const batchResults = await Promise.all(
+    batches.map(async (batch, idx) => {
+      try {
+        return await scoreBatch(batch, productDescription, targetCustomer)
+      } catch (err) {
+        console.error(`[scorer] Batch ${idx + 1} failed:`, err)
+        return batch.map((post) => ({
           externalId: post.externalId,
           score: 50,
-          intentLevel: 'medium',
+          intentLevel: 'medium' as const,
           reasoning: 'scoring unavailable',
-        })
+        }))
       }
-    }
-  }
+    })
+  )
+
+  const allResults: ScorerResult[] = batchResults.flat()
 
   // Join scores back onto original posts by externalId
   const scoreMap = new Map(allResults.map((r) => [r.externalId, r]))
