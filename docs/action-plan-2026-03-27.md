@@ -1,6 +1,6 @@
 # Dashboard UI Upgrade Action Plan
 **Date:** 2026-03-27
-**Status:** Planning (no changes yet)
+**Status:** Completed
 
 ---
 
@@ -9,181 +9,63 @@ Upgrade the LaunchRadar dashboard UI to match the superior UX patterns found in 
 
 ---
 
-## Current State vs. Target State
+## Completed Changes
 
-### Issue 1: Title Click Should Go Directly to Link
-**Current (LaunchRadar):**
-- Title is plain text, not clickable
-- User must click "View Thread" button to see the post
-- Adds 1 extra click
-
-**Better (socrates-finds-you):**
-- Title is a clickable hyperlink that opens the URL directly in a new tab
-- Single click to reach the content
-
-**Change:** Make `opportunity.title` in `OpportunityCard.tsx:108` a clickable `<a>` tag pointing to `opportunity.url` with `target="_blank" rel="noopener"`.
+### Issue 1: Title Click Goes Directly to Link ✅
+**Change:** Made `opportunity.title` in `OpportunityCard.tsx` a clickable `<a>` tag pointing to `opportunity.url` with `target="_blank" rel="noopener noreferrer"`. Added hover styling (blue color + underline).
+**Commit:** `c87bcaf`
 
 ---
 
-### Issue 2: "View Thread" Button Becomes Redundant
-**Current (LaunchRadar):**
-- "View Thread" button (line 119) duplicates what the title link should do
-- Wastes horizontal space and UI clarity
-
-**Better (socrates-finds-you):**
-- No "View Thread" button; the title itself is the gateway to the full thread
-
-**Change:** Remove the "View Thread" button entirely once the title is clickable. Users can click title to see full thread, or stay on dashboard to make decisions.
+### Issue 2: Removed "View Thread" Button ✅
+**Change:** Removed the "View Thread" button from `OpportunityCard.tsx`. The clickable title replaces its function. The `ReplyModal` remains accessible via other means for users who want to browse all reply variations.
+**Commit:** `9ddc212`
 
 ---
 
-### Issue 3: Missing Thread Body Preview
-**Current (LaunchRadar):**
-- Only shows title and "Why relevant"
-- User must click to view the full thread context
-
-**Better (socrates-finds-you):**
-- Displays thread body/excerpt inline on the card
-- Provides context immediately without leaving dashboard
-
-**Change:**
-1. Add a `.lead-body` or `.thread-preview` section in `OpportunityCard.tsx` after the title (line 108)
-2. Display `opportunity.body` truncated to ~3–5 lines (use CSS `line-clamp-3` or `line-clamp-5`)
-3. Position it **before** "Why relevant" so users see the actual thread content first
-4. Body should be styled as muted/secondary text, smaller than title, to maintain hierarchy
+### Issue 3: Thread Body Preview Added ✅
+**Change:** Added a body preview section in `OpportunityCard.tsx` between the title and "Why relevant". Renders `opportunity.body` truncated to 3 lines (`line-clamp-3`) in muted secondary text. Only renders when `opportunity.body` is non-null — HN posts without body text are unaffected.
+**Commit:** `11fe1d6`
 
 ---
 
-### Issue 4: Suggested Replies Hidden in Modal
-**Current (LaunchRadar):**
-- Suggested replies are in a modal (`ReplyModal.tsx`)
-- Requires clicking "View Thread" → dialog opens → scroll through content → see suggestions
-- Replies are completely hidden from dashboard view
-
-**Better (socrates-finds-you):**
-- Suggested reply is shown inline on the card, right below the reasoning
-- One-click copy button to grab the text
-- "Mark as Replied" button lives alongside it
-
-**Change:**
-1. In `OpportunityCard.tsx`, add a new section for suggested replies **after** the reasoning section
-2. Display the first suggested reply (or best one) directly on the card
-3. If `opportunity.suggestedReplies` exists and has length > 0:
-   - Show a `.reply-section` with label "Suggested Reply"
-   - Display the reply text in a subtle box (use a light background color, e.g., `bg-slate-50`)
-   - Add a **Copy** button next to it (similar to socrates-finds-you's copy button)
-   - Optionally add tabs/toggle to switch between reply variations if multiple exist
-4. Keep the "View Thread" modal available as an escape hatch for users who want to see all variations and full thread context
+### Issue 4: Suggested Replies in Modal — Skipped
+**Decision:** Not an issue. The `ReplyModal` experience is sufficient for browsing multiple reply variations with pros/cons. Instead, a first-reply preview was added inline (see Bonus below).
 
 ---
 
-### Issue 5: Button Text Clarity
-**Current (LaunchRadar):**
-- Button text is "Mark Replied" (line 139)
-- Grammatically slightly ambiguous
-
-**Better (socrates-finds-you):**
-- Uses "Mark as Replied" or similar
-- Clearer intent
-
-**Change:** Change button text from `"Mark Replied"` to `"Mark as Replied"` in `OpportunityCard.tsx:139`.
+### Issue 5: Button Text Updated ✅
+**Change:** Updated button label from `"Mark Replied"` to `"Mark as Replied"` in `OpportunityCard.tsx`.
+**Commit:** `48b4d0c`
 
 ---
 
-## Implementation Plan
+### Bonus: Inline Suggested Reply on Card ✅
+**Problem found during implementation:** `suggestedReplies` was always saved as `[]` during Scan Now. Replies were only generated for the top 5 opportunities at daily digest time.
 
-### Phase 1: Make Title Clickable (Quick Win)
-**File:** `components/OpportunityCard.tsx`
-- **Line 108:** Change title from plain text to `<a href={opportunity.url} target="_blank" rel="noopener">`
-- Add hover styling (underline, color change) to indicate clickability
-- **Estimated effort:** 5 minutes
+**Fix (two-part):**
 
-### Phase 2: Remove "View Thread" Button
-**File:** `components/OpportunityCard.tsx`
-- **Lines 118–120:** Delete the "View Thread" button
-- Adjust layout so other buttons (Mark Replied, Skip) sit naturally
-- **Estimated effort:** 2 minutes
-- **Note:** Keep `ReplyModal` available; it can be triggered by an info icon or "See all replies" link if needed in future
+1. **`lib/refresh-opportunities.ts`** — After scoring, generate replies in parallel (`Promise.all`) for all `high` and `medium` intent posts at scan time. `gpt-4o` is used; low-intent posts are skipped to limit API calls and stay within Vercel's 10s timeout. Failures are isolated per post.
 
-### Phase 3: Add Thread Body Preview
-**File:** `components/OpportunityCard.tsx`
-- **After line 108 (title):** Insert a new section for body preview
-- Render `opportunity.body` truncated to 3–5 lines using Tailwind `line-clamp-3` or `line-clamp-5`
-- Style as muted/secondary color (e.g., `text-muted-foreground`)
-- Smaller font size (e.g., `text-sm`)
-- Add top margin to separate from title
-- **Estimated effort:** 15 minutes (including styling)
+2. **`components/OpportunityCard.tsx`** — Added an inline "Suggested Reply" section below the reasoning block:
+   - Shows the variation label (e.g. "Direct / Helpful") as a pill badge
+   - Displays the reply text in a `bg-slate-50` box with a blue left border, truncated to 4 lines
+   - One-click **Copy** button with "Copied ✓" feedback
+   - "+N more variations in modal" hint when multiple replies exist
+   - Only renders when `suggestedReplies.length > 0`
 
-### Phase 4: Add Suggested Reply Inline
-**File:** `components/OpportunityCard.tsx`
-- **After reasoning section (line 114):** Add a new `.reply-section` component
-- Display first suggested reply from `opportunity.suggestedReplies[0]` if it exists
-- Use a subtle background box with left border (similar to socrates-finds-you)
-- Add label "Suggested Reply" above the text
-- Add a **Copy** button that copies the reply text to clipboard
-- Optional: Add a small button to toggle between multiple replies if `suggestedReplies.length > 1`
-- **Estimated effort:** 25 minutes (including copy button logic and styling)
-
-### Phase 5: Update Button Text
-**File:** `components/OpportunityCard.tsx`
-- **Line 139:** Change `"Mark Replied"` → `"Mark as Replied"`
-- **Estimated effort:** 1 minute
+**Commit:** `eac7a1b`
 
 ---
 
-## Optional Future Enhancements
-1. **Inline reply count:** Show "3 suggested replies" as a clickable toggle to swap between them
-2. **Quick actions row:** Consolidate Mark Replied + Skip into a compact action row below the suggested reply
-3. **Thread excerpt length control:** Let users configure body preview length in settings
-4. **Reply variation preview:** Show approach/label of each suggestion in tabs before committing to one
-
----
-
-## Files to Modify
-| File | Changes | Scope |
-|---|---|---|
-| `components/OpportunityCard.tsx` | Make title clickable, remove View Thread button, add body preview, add suggested reply, update button text | Core UI |
+## Files Modified
+| File | Changes |
+|---|---|
+| `components/OpportunityCard.tsx` | Clickable title, removed View Thread button, body preview, inline suggested reply, button text |
+| `lib/refresh-opportunities.ts` | Generate replies during scan for high/medium intent posts |
 
 ## Files NOT Modified
-- `components/ReplyModal.tsx` — kept intact as fallback for detailed view
+- `components/ReplyModal.tsx` — kept intact
 - `components/DashboardClient.tsx` — no changes needed
 - `app/dashboard/page.tsx` — no changes needed
-- `lib/refresh-opportunities.ts` — no changes needed
-
----
-
-## Testing Checklist
-- [ ] Title clicks open URL in new tab
-- [ ] Thread body displays and truncates correctly
-- [ ] Suggested reply displays with copy button
-- [ ] Copy button works and shows success feedback
-- [ ] "Mark as Replied" button still functions
-- [ ] "Skip" button still shows dropdown menu
-- [ ] Layout remains responsive on mobile
-- [ ] No regressions in existing functionality
-
----
-
-## Success Criteria
-1. **Reduced click friction:** Users can click title directly; no need for "View Thread" button
-2. **Better context:** Thread body visible without leaving dashboard
-3. **Faster reply drafting:** Suggested reply visible at a glance with 1-click copy
-4. **Clearer UX:** Button text is grammatically correct and intent is obvious
-
----
-
-## Timeline
-- **Phase 1–2 (Title + Button):** ~10 minutes
-- **Phase 3 (Body preview):** ~15 minutes
-- **Phase 4 (Suggested reply):** ~25 minutes
-- **Phase 5 (Button text):** ~1 minute
-- **Testing:** ~15 minutes
-- **Total estimated time:** ~1 hour
-
----
-
-## Notes
-- These changes align LaunchRadar with socrates-finds-you's proven UX patterns
-- No database or API changes required
-- All logic remains in the client component
-- Changes are additive and safe to roll back if needed
+- `app/api/settings/route.ts` — no changes needed (separate sprint)
