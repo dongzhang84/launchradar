@@ -122,10 +122,6 @@ export default function OpportunityCard({ opportunity, externalReplied, onViewRe
 
           {/* Actions */}
           <div className="flex gap-2 pt-1">
-            <Button size="sm" variant="outline" onClick={onViewReply}>
-              View Thread
-            </Button>
-
             {replied ? (
               <Button
                 size="sm"
