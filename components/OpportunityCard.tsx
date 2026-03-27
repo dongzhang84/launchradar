@@ -105,7 +105,14 @@ export default function OpportunityCard({ opportunity, externalReplied, onViewRe
           </div>
 
           {/* Title */}
-          <p className="font-semibold leading-snug line-clamp-2">{opportunity.title}</p>
+          <a
+            href={opportunity.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold leading-snug line-clamp-2 hover:underline hover:text-blue-600 transition-colors"
+          >
+            {opportunity.title}
+          </a>
 
           {/* Reasoning */}
           <p className="text-sm text-muted-foreground">
