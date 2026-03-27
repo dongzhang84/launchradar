@@ -12,9 +12,9 @@ Monitor Reddit and Hacker News for high-intent conversations where people are as
 1. **Onboarding** — describe your product in one sentence; OpenAI infers your target customer and generates keywords and subreddits automatically
 2. **Instant first scan** — as soon as onboarding completes, a scan runs immediately and results appear within 30–60 seconds
 3. **Daily fetch** — a cron job scrapes Reddit and Hacker News for new posts, scores each one 0–100 for relevance and tags intent (high / medium / low)
-4. **Dashboard** — browse and filter opportunities; click through to reply on Reddit or HN
+4. **Dashboard** — browse and filter opportunities; each card shows the post title (clickable link), a body preview, AI reasoning, and an inline suggested reply with a one-click copy button
 5. **Digest email** — receive a daily summary of the top opportunities with AI-generated reply suggestions
-6. **Manual scan** — trigger an on-demand scan any time from the Settings page
+6. **Manual scan** — trigger an on-demand scan any time from the Settings page; configure how many HN posts to fetch per scan (default 50)
 
 ---
 
@@ -26,7 +26,7 @@ Monitor Reddit and Hacker News for high-intent conversations where people are as
 | Database | PostgreSQL via Supabase |
 | ORM | Prisma v7 with `@prisma/adapter-pg` |
 | Auth | Supabase SSR (`@supabase/ssr`) |
-| AI | OpenAI (GPT-4o-mini for scoring, GPT-4o for keywords) |
+| AI | OpenAI (GPT-4o-mini for scoring, GPT-4o for keywords + reply generation) |
 | Payments | Stripe (hosted Checkout, $19/month) |
 | Email | Resend + React Email |
 | Caching | Upstash Redis (deduplication) |

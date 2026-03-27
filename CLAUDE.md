@@ -143,10 +143,10 @@ app/
 
 components/
   DashboardClient.tsx               Client: filter tabs, opportunity list, scanning banner with polling
-  OpportunityCard.tsx               Individual opportunity with action buttons
-  ReplyModal.tsx                    Shadcn Dialog with suggested reply variations
+  OpportunityCard.tsx               Individual opportunity — clickable title (direct link), body preview, inline suggested reply with copy button, action buttons
+  ReplyModal.tsx                    Shadcn Dialog with all suggested reply variations (pros/cons per variation)
   BuyModal.tsx                      DISABLED stub — renders null (Stripe disabled)
-  SettingsClient.tsx                Client: all settings forms + Scan Now + Clear History buttons
+  SettingsClient.tsx                Client: all settings forms + Scan Now + Clear History buttons + hnFetchLimit input
   StatsBar.tsx                      Opportunities / replies / skipped counters
   Header.tsx                        Top nav with email, settings link, logout
 
@@ -155,11 +155,12 @@ lib/
   supabase/server.ts                createServerSupabaseClient() for Server Components/Routes
   supabase/client.ts                createBrowserSupabaseClient() for Client Components
   supabase/admin.ts                 Admin client (service role key)
-  scorer.ts                         OpenAI scoring — relevance 0–100, intent level, replies
+  scorer.ts                         OpenAI scoring — relevance 0–100, intent level; batches run in parallel via Promise.all
   keyword-generator.ts              OpenAI keyword + subreddit generation from product desc; subreddits target end-user communities, not founder/dev communities
-  refresh-opportunities.ts          Shared fetch/score/save pipeline for a single user
+  refresh-opportunities.ts          Shared fetch/score/save pipeline for a single user; also generates suggested replies (GPT-4o) for high/medium intent posts at scan time
+  reply-generator.ts                GPT-4o reply generation — 3 variations (helpful / educational / question) with pros/cons
   reddit.ts                         Reddit public .json API fetcher
-  hn.ts                             HN Algolia API fetcher
+  hn.ts                             HN Algolia API fetcher; limit controlled by profile.hnFetchLimit (default 50)
   digest.ts                         Selects top opportunities for digest
   email-templates/digest.tsx        React Email digest template
 
@@ -174,7 +175,7 @@ prisma/
 **Profile** — one per user; `id` = Supabase auth UID
 - Subscription: `stripeCustomerId`, `subscriptionStatus`, `trialEndsAt`, `currentPeriodEnd` (Stripe fields kept in schema but unused in personal tool mode)
 - Targeting: `keywords[]`, `subreddits[]`, `productDescription` (`targetCustomer` removed from v1.1 — AI infers it)
-- Prefs: `emailEnabled`, `digestTime` (UTC hour), `digestFrequency`
+- Prefs: `emailEnabled`, `digestTime` (UTC hour), `digestFrequency`, `hnFetchLimit` (Int, default 50, range 10–200)
 
 **Opportunity** — one per matched post; `userId` → Profile
 - Source: `platform` (reddit/hn), `externalId`, `url`, `title`, `body`, `subreddit`, `author`

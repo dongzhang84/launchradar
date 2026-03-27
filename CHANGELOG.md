@@ -6,6 +6,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.3.0] — 2026-03-27
+
+### Added
+- **Inline suggested reply on opportunity cards** — the first AI-generated reply variation is now displayed directly on each card with a one-click Copy button and a "+N more variations in modal" hint; no need to open the modal to see a reply
+- **Inline thread body preview** — the first 3 lines of the post body are shown on each card between the title and "Why relevant", giving context without leaving the dashboard
+- **Reply generation during Scan Now** — `lib/refresh-opportunities.ts` now calls `generateReplies()` (GPT-4o) for all high/medium intent opportunities at scan time; low-intent posts keep `suggestedReplies: []` to limit API calls and stay within timeout
+- **`hnFetchLimit` setting** — new `Int` field on `Profile` (default `50`); exposed as a number input (min 10, max 200) in the Keywords & Subreddits section of Settings; controls how many HN posts are fetched per scan
+
+### Changed
+- **Opportunity card title is now a clickable link** — clicking the title opens the source URL in a new tab directly; the separate "View Thread" button has been removed
+- **Button label** updated from "Mark Replied" to "Mark as Replied"
+- **OpenAI scoring parallelized** — `lib/scorer.ts` now runs all scoring batches with `Promise.all` instead of a sequential `for` loop; reduces scoring time from ~10–15 s to ~3–5 s for 30 posts
+- **HN fetch reduced from 150 to 50 posts** (default) — cuts HN fetch time from ~3 s to ~1 s; configurable per user via `hnFetchLimit` setting
+
+---
+
 ## [1.2.0] — 2026-03-25
 
 ### Added
