@@ -1,6 +1,6 @@
 # Sprint Report
 
-**Generated:** 2026-03-27 22:58 UTC  
+**Generated:** 2026-03-27 23:02 UTC  
 **Showing:** last 6 week(s) of 6 total  
 
 ---
@@ -11,11 +11,11 @@
 |------|-------|
 | Status | ⚠️ Slow |
 | Active days | 3 / 7 |
-| Total commits | 20 |
+| Total commits | 21 |
 
 | Mon | Tue | Wed | Thu | Fri | Sat | Sun |
 |---|---|---|---|---|---|---|
-| ⚪ | **12** | **3** | ⚪ | **5** | ⚪ | ⚪ |
+| ⚪ | **12** | **3** | ⚪ | **6** | ⚪ | ⚪ |
 
 **Tue – Tuesday, Mar 24**
 
@@ -40,6 +40,7 @@
 
 **Fri – Friday, Mar 27**
 
+- `48b4d0c` fix: update button text to "Mark as Replied" — _dongzhang84_ `2026-03-27 16:02`
 - `11fe1d6` feat: add thread body preview to opportunity card — _dongzhang84_ `2026-03-27 15:58`
 - `9ddc212` feat: remove View Thread button — _dongzhang84_ `2026-03-27 15:56`
 - `c87bcaf` feat: make opportunity title a direct link to thread — _dongzhang84_ `2026-03-27 15:55`
