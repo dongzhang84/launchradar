@@ -1,6 +1,6 @@
 # Sprint Report
 
-**Generated:** 2026-03-27 22:55 UTC  
+**Generated:** 2026-03-27 22:56 UTC  
 **Showing:** last 6 week(s) of 6 total  
 
 ---
@@ -11,11 +11,11 @@
 |------|-------|
 | Status | ⚠️ Slow |
 | Active days | 3 / 7 |
-| Total commits | 18 |
+| Total commits | 19 |
 
 | Mon | Tue | Wed | Thu | Fri | Sat | Sun |
 |---|---|---|---|---|---|---|
-| ⚪ | **12** | **3** | ⚪ | **3** | ⚪ | ⚪ |
+| ⚪ | **12** | **3** | ⚪ | **4** | ⚪ | ⚪ |
 
 **Tue – Tuesday, Mar 24**
 
@@ -40,6 +40,7 @@
 
 **Fri – Friday, Mar 27**
 
+- `9ddc212` feat: remove View Thread button — _dongzhang84_ `2026-03-27 15:56`
 - `c87bcaf` feat: make opportunity title a direct link to thread — _dongzhang84_ `2026-03-27 15:55`
 - `c56a90d` docs: add dashboard UI upgrade action plan — _dongzhang84_ `2026-03-27 15:54`
 - `9f2901b` perf: parallelize OpenAI scoring and add configurable HN fetch limit — _dongzhang84_ `2026-03-27 15:41`
