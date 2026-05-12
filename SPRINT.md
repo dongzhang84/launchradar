@@ -1,6 +1,6 @@
 # Sprint Report
 
-**Generated:** 2026-05-12 19:48 UTC  
+**Generated:** 2026-05-12 20:54 UTC  
 **Showing:** last 8 week(s) of 13 total  
 
 ---
@@ -11,14 +11,15 @@
 |------|-------|
 | Status | ❌ Stalled |
 | Active days | 1 / 7 |
-| Total commits | 2 |
+| Total commits | 3 |
 
 | Mon | Tue | Wed | Thu | Fri | Sat | Sun |
 |---|---|---|---|---|---|---|
-| ⚪ | **2** | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ |
+| ⚪ | **3** | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ |
 
 **Tue – Tuesday, May 12**
 
+- `cc7e0f0` Add historical-sweep script for backfill via Reddit search API — _dongzhang84_ `2026-05-12 13:54`
 - `18889ff` Tighten scorer for product-feedback signals only (Christian AI direction) — _dongzhang84_ `2026-05-12 12:48`
 - `1a47012` Switch monitoring direction to Christian AI product research — _dongzhang84_ `2026-05-12 11:50`
 
