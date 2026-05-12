@@ -41,23 +41,36 @@ function buildPrompt(
     ageHours: Math.round((now - p.postedAt.getTime()) / (1000 * 60 * 60)),
   }))
 
-  return `You are evaluating Reddit/HN posts to find customer acquisition opportunities for a founder.
+  return `You are evaluating Reddit/HN posts to find PRODUCT OPPORTUNITY SIGNALS for a founder researching this space.
 
-Product: ${productDescription}
-Target customer: ${targetCustomer}
+Research context: ${productDescription}
+Target users: ${targetCustomer}
 
-Score each post 0-100:
-90-100: Person is explicitly asking for a tool/solution like this product
-70-89: Person describes a problem this product directly solves
-50-69: Tangentially related, could become a customer
-0-49: Not relevant
+Score each post 0-100 by signal strength:
+90-100: Explicit product wish, sharp complaint about an existing tool, or clear unmet need
+70-89: Strong friction / pain point or AI-discourse that maps to a product opportunity
+50-69: Tangential background signal, useful for context but not a direct opportunity
+0-49: Not a signal (pure theology debate, off-topic, political, etc.)
 
 intentLevel: score >= 70 = high, score >= 50 = medium, below 50 = low
+
+For the reasoning field, output ONE LINE in this exact format so it can be parsed later:
+[TAG: <tag>] [PAY: yes|no] [CLERGY: yes|no] <one-sentence summary>
+
+<tag> must be ONE of these (pick the single most relevant; use NONE if not a signal):
+WISH-product, WISH-feature,
+COMPLAINT-pricing, COMPLAINT-accuracy, COMPLAINT-shallow, COMPLAINT-pushy, COMPLAINT-memory, COMPLAINT-theology,
+LIFE-grief, LIFE-addiction, LIFE-marriage, LIFE-discernment, LIFE-doubt, LIFE-loneliness,
+AI-distrust, AI-using, AI-comparison,
+NONE
+
+PAY = "yes" if author explicitly expresses willingness to pay for a hypothetical solution.
+CLERGY = "yes" if author identifies as pastor, priest, deacon, minister, or clergy.
 
 Posts:
 ${JSON.stringify(postsWithAge)}
 
-Return JSON: { "results": [ { "externalId": "...", "score": 0-100, "intentLevel": "high|medium|low", "reasoning": "one sentence max" } ] }`
+Return JSON: { "results": [ { "externalId": "...", "score": 0-100, "intentLevel": "high|medium|low", "reasoning": "[TAG: ...] [PAY: ...] [CLERGY: ...] summary" } ] }`
 }
 
 async function scoreBatch(
