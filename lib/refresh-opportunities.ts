@@ -28,12 +28,7 @@ function fromHN(story: HNStory): NormalizedPost {
 function matchesKeywords(post: NormalizedPost, keywords: string[]): boolean {
   if (keywords.length === 0) return false
   const haystack = `${post.title} ${post.body}`.toLowerCase()
-  return keywords.some((kw) => {
-    const phrase = kw.toLowerCase()
-    if (haystack.includes(phrase)) return true
-    const words = phrase.split(/\s+/).filter((w) => w.length > 4)
-    return words.some((word) => haystack.includes(word))
-  })
+  return keywords.some((kw) => haystack.includes(kw.toLowerCase()))
 }
 
 export async function refreshOpportunitiesForUser(userId: string): Promise<number> {
@@ -103,8 +98,8 @@ export async function refreshOpportunitiesForUser(userId: string): Promise<numbe
     return []
   })
 
-  scored = scored.filter((p) => p.relevanceScore >= 40)
-  console.log(`[refresh] User ${userId} — scored (relevance>=40): ${scored.length}`)
+  scored = scored.filter((p) => p.relevanceScore >= 50)
+  console.log(`[refresh] User ${userId} — scored (relevance>=50): ${scored.length}`)
 
   if (scored.length === 0) return 0
 

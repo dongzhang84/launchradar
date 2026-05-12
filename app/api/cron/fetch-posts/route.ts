@@ -31,14 +31,7 @@ function fromHN(story: HNStory): NormalizedPost {
 function matchesKeywords(post: NormalizedPost, keywords: string[]): boolean {
   if (keywords.length === 0) return false
   const haystack = `${post.title} ${post.body}`.toLowerCase()
-  return keywords.some((kw) => {
-    const phrase = kw.toLowerCase()
-    // Try the full phrase first
-    if (haystack.includes(phrase)) return true
-    // Fall back to individual significant words (length > 4) from the phrase
-    const words = phrase.split(/\s+/).filter((w) => w.length > 4)
-    return words.some((word) => haystack.includes(word))
-  })
+  return keywords.some((kw) => haystack.includes(kw.toLowerCase()))
 }
 
 export async function GET(request: NextRequest) {
@@ -128,9 +121,9 @@ export async function GET(request: NextRequest) {
       return []
     })
 
-    console.log(`[cron] Profile ${profile.id} — scored: ${scored.length}, passing relevance>=40: ${scored.filter((p) => p.relevanceScore >= 40).length}`)
+    console.log(`[cron] Profile ${profile.id} — scored: ${scored.length}, passing relevance>=50: ${scored.filter((p) => p.relevanceScore >= 50).length}`)
 
-    scored = scored.filter((p) => p.relevanceScore >= 40)
+    scored = scored.filter((p) => p.relevanceScore >= 50)
     if (scored.length === 0) continue
 
     // Re-attach the fields scorer doesn't return (author, url, score, platform)

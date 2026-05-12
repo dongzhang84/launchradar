@@ -12,51 +12,47 @@ dotenv.config({ path: '.env.local' })
 // Dynamic imports below — keep env loaded BEFORE any module that constructs
 // an OpenAI client at module load time (lib/scorer, lib/reply-generator).
 
-const PRODUCT_DESCRIPTION = `Monitoring Christian Reddit communities to surface product opportunities for an AI-native Christian product (US market). The signals we care about: (1) explicit product wishes ("I wish there was an app that...", "looking for an app that..."); (2) complaints about existing Bible / prayer / AI faith apps (Hallow, YouVersion, Bible Chat, Pray.com, Glorify, Magisterium AI, Logos, Olive Tree, Faithlife, Creed, Aura, Truthly, Haven) covering pricing, accuracy/hallucinations, shallowness, pushy gamification, lack of memory, theological errors; (3) spiritual life friction — grief, addiction, marriage difficulty, parenting faith questions, vocational/marriage/career discernment, doubt, deconstruction, faith crisis, loneliness in faith, hesitation to ask pastor about taboo or shameful questions; (4) AI-specific discourse — using ChatGPT/Claude for spiritual or biblical questions, theological/ethical concerns about AI in faith, comparisons between Christian AI tools. Flag posts that express willingness to pay. Flag posts where a pastor / priest / clergy / Christian creator gives an opinion on AI tools. Skip pure theological debates (e.g. Calvinism vs Arminianism) unless they tie to tools/apps. Skip pure political posts unless they tie to AI/tech.`
+const PRODUCT_DESCRIPTION = `Monitoring Christian Reddit communities to surface PRODUCT OPPORTUNITIES for an AI-native Christian product (US market). We are NOT building a pastoral counseling service. We are NOT looking for people to comfort. We are looking for product feedback: what's broken in existing apps and what users wish existed. The signals we care about: (1) explicit product wishes — "I wish there was an app that...", "looking for an app that..."; (2) named complaints about specific existing apps — Hallow, YouVersion, Bible Chat, Pray.com, Glorify, Magisterium AI, Logos, Olive Tree, Faithlife, Creed, Aura, Truthly, Haven — covering pricing, AI accuracy / hallucinations / wrong scripture citation, shallowness, pushy gamification, lack of memory, theological errors; (3) using ChatGPT / Claude for spiritual or biblical questions with specific friction or product gap mentioned; (4) comparisons / recommendation requests between Christian AI tools. Flag posts that explicitly express willingness to pay. Flag posts where a pastor / priest / clergy / Christian creator gives an opinion on AI tools. Strongly down-score (below 40): pure spiritual struggle posts (grief, doubt, loneliness, suicidal thoughts, addiction, marriage problems) that do NOT reference an app or tool gap. Strongly down-score: theology debates (Calvinism vs Arminianism etc.), denominational arguments, political posts that do not relate to AI/tech.`
 
-const TARGET_CUSTOMER = `US-based Christian users across Catholic, Protestant (Reformed, evangelical, mainline), and Orthodox traditions. Users of Bible apps, prayer apps, and AI faith tools. Both engaged believers and those in spiritual struggle, doubt, deconstruction, or grief. Includes pastors, priests, deacons, and Christian creators whose opinions on AI tools carry weight in their communities.`
+const TARGET_CUSTOMER = `US-based Christian users across Catholic, Protestant (Reformed, evangelical, mainline), and Orthodox traditions who are USERS or POTENTIAL USERS of Bible apps, prayer apps, and AI faith tools. Pastors, priests, deacons, and Christian creators whose opinions on AI tools matter. We do NOT target Christians purely in spiritual crisis or counseling-seeking mode — those are not product customers.`
 
 const KEYWORDS = [
-  // Explicit product wishes
+  // Explicit product wishes (highest priority)
   'wish there was an app',
+  'wish there was a tool',
   'looking for an app',
   'does anyone know of an app',
-  'need help finding',
-  "why isn't there",
+  'need help finding an app',
+  "why isn't there an app",
   'recommend an app',
   'is there a tool',
-  // Existing products (catch complaints / comparisons)
+  'is there an app',
+  'any app for',
+  'app recommendation',
+  // Existing products (catch complaints, comparisons, reviews)
   'Hallow',
   'YouVersion',
   'Bible Chat',
   'Pray.com',
   'Glorify',
   'Magisterium',
-  'Logos',
+  'Logos Bible',
   'Olive Tree',
   'Faithlife',
   'Creed app',
-  // AI x faith
+  'Bible app',
+  'prayer app',
+  // AI x faith (product-angle keywords)
   'ChatGPT for prayer',
-  'ChatGPT Bible',
+  'ChatGPT for Bible',
   'ChatGPT scripture',
+  'asked ChatGPT',
+  'asked Claude',
   'AI Bible',
-  'AI for spiritual',
+  'AI prayer',
   'Christian AI',
   'Catholic AI',
-  // Life friction
-  'ask my pastor',
-  'afraid to ask',
-  'too embarrassed to ask',
-  'deconstruction',
-  'faith crisis',
-  'spiritual struggle',
-  'lost my faith',
-  'doubting',
-  'grieving',
-  'addiction',
-  'marriage struggle',
-  'discernment',
+  'AI for faith',
   // Pay signal
   'would pay for',
   'willing to pay',

@@ -41,28 +41,37 @@ function buildPrompt(
     ageHours: Math.round((now - p.postedAt.getTime()) / (1000 * 60 * 60)),
   }))
 
-  return `You are evaluating Reddit/HN posts to find PRODUCT OPPORTUNITY SIGNALS for a founder researching this space.
+  return `You are evaluating Reddit posts to find PRODUCT OPPORTUNITY SIGNALS for a founder researching the Christian AI app market (Bible apps, prayer apps, AI faith tools).
 
 Research context: ${productDescription}
 Target users: ${targetCustomer}
 
-Score each post 0-100 by signal strength:
-90-100: Explicit product wish, sharp complaint about an existing tool, or clear unmet need
-70-89: Strong friction / pain point or AI-discourse that maps to a product opportunity
-50-69: Tangential background signal, useful for context but not a direct opportunity
-0-49: Not a signal (pure theology debate, off-topic, political, etc.)
+CRITICAL FRAMING: We are NOT building a pastoral counseling service and we are NOT looking for people to comfort. We are looking for PRODUCT FEEDBACK. The only posts that matter are ones where the author:
+(a) explicitly asks for / wishes for an app, tool, or AI product, OR
+(b) complains about a specific existing app/tool (Hallow, YouVersion, Bible Chat, Pray.com, Glorify, Magisterium, Logos, Olive Tree, Faithlife, Creed, ChatGPT/Claude when used for spiritual purposes), OR
+(c) compares Christian AI tools or recommends one over another, OR
+(d) describes a concrete workflow that an app could solve (e.g. "I keep losing track of my Bible reading streak").
+
+Posts that are pure personal struggle (grief, suicidal thoughts, doubt, loneliness, marriage problems, addiction, asking for prayer) WITHOUT any reference to an app/tool/product gap must score BELOW 40. Posts that are pure theology debate, denominational arguments, or political posts must score BELOW 40.
+
+Score each post 0-100:
+90-100: Explicit product wish ("I wish there was an app that..."), sharp named complaint about a specific tool, or direct recommendation/comparison request between Christian apps
+70-89: Strong indirect product gap — author describes using ChatGPT/Claude for faith with specific friction, OR mentions a workflow that maps to an obvious product opportunity
+50-69: Casual mention of an existing product with mild evaluation; AI-in-faith discussion with weak product angle
+0-49: Pure spiritual struggle / theology debate / off-topic / political / no product or tool angle
 
 intentLevel: score >= 70 = high, score >= 50 = medium, below 50 = low
 
 For the reasoning field, output ONE LINE in this exact format so it can be parsed later:
 [TAG: <tag>] [PAY: yes|no] [CLERGY: yes|no] <one-sentence summary>
 
-<tag> must be ONE of these (pick the single most relevant; use NONE if not a signal):
+<tag> must be ONE of these (use NONE if score < 50):
 WISH-product, WISH-feature,
 COMPLAINT-pricing, COMPLAINT-accuracy, COMPLAINT-shallow, COMPLAINT-pushy, COMPLAINT-memory, COMPLAINT-theology,
-LIFE-grief, LIFE-addiction, LIFE-marriage, LIFE-discernment, LIFE-doubt, LIFE-loneliness,
 AI-distrust, AI-using, AI-comparison,
 NONE
+
+Note: LIFE-* tags are not used. A post about grief or doubt alone is not a product signal — only score it high if the author explicitly ties it to needing an app or tool.
 
 PAY = "yes" if author explicitly expresses willingness to pay for a hypothetical solution.
 CLERGY = "yes" if author identifies as pastor, priest, deacon, minister, or clergy.
